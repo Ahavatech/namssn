@@ -6,12 +6,18 @@ import { Users, Target, Eye, Heart } from 'lucide-react';
 
 export default function About() {
   const executives = [
-    { name: 'President', position: 'Chief Executive', bio: 'Leading the association with vision and dedication' },
-    { name: 'Vice President', position: 'Deputy Leader', bio: 'Supporting leadership and coordinating activities' },
-    { name: 'Secretary General', position: 'Administrative Head', bio: 'Managing records and communications' },
-    { name: 'Treasurer', position: 'Financial Officer', bio: 'Overseeing financial operations and budgets' },
-    { name: 'Director of Socials', position: 'Events Coordinator', bio: 'Organizing social and cultural events' },
-    { name: 'Director of Academics', position: 'Academic Coordinator', bio: 'Coordinating academic programs and resources' },
+    { name: 'Jacobs Odunayo M.', position: 'President', phone: '09052029197' },
+    { name: 'Qazeem Anuoluwapo M.', position: 'Vice President', phone: '07089225441' },
+    { name: 'Adeyemi Adesewa', position: 'General Secretary-Elect', phone: '09138904056' },
+    { name: 'Adetola Emmanuel', position: 'Assistant General Secretary-Elect', phone: '08081995085' },
+    { name: 'Osuolale Anuoluwapo', position: 'Academic Director-Elect', phone: '08050230712' },
+    { name: 'Adekunle Ibukunoluwa A.', position: 'Editor in Chief', phone: '08142717108' },
+    { name: 'Akintunde Oluwafisayomi', position: 'Treasurer', phone: '07025138913' },
+    { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453' },
+    { name: 'EMMANUEL ISAAC V.', position: 'Financial Secretary', phone: '08166786346' },
+    { name: 'Idowu Esther', position: 'Assistant Librarian', phone: '08104397406' },
+    { name: 'Adesoye Qodir A.', position: 'Director Social', phone: '07016560860' },
+    { name: 'Oyekanmi Titiloye', position: 'PRO', phone: '07067846902' },
   ];
 
   return (
@@ -136,57 +142,10 @@ export default function About() {
                     </Badge>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm text-center">{exec.bio}</p>
+                    <p className="text-gray-600 text-sm text-center font-semibold">{exec.phone}</p>
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Committees Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-8">Our Committees</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle>Academic Committee</CardTitle>
-                  <CardDescription>
-                    Organizes seminars, workshops, and academic support programs
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle>Social Committee</CardTitle>
-                  <CardDescription>
-                    Plans social events, cultural activities, and community engagement
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle>Editorial Committee</CardTitle>
-                  <CardDescription>
-                    Manages publications, newsletters, and content creation
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              <Card className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <CardTitle>Welfare Committee</CardTitle>
-                  <CardDescription>
-                    Addresses student welfare and support services
-                  </CardDescription>
-                </CardHeader>
-              </Card>
             </div>
           </div>
         </div>
