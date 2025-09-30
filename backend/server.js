@@ -19,6 +19,7 @@ app.use(cors({
     'https://namssn.onrender.com',
     'https://namssnapi.onrender.com',
     'https://namssn-frontend.onrender.com',
+    'https://namssn-j6h8.onrender.com/',
     'https://*.onrender.com'
   ],
   credentials: true
