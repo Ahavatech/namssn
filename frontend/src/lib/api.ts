@@ -1,6 +1,10 @@
 import axios from 'axios';
 
+<<<<<<< HEAD
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com';
+=======
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+>>>>>>> 5a98c4268eb16c81d34e0d92059f9da8a2b20e63
 
 // Create axios instance
 const api = axios.create({
