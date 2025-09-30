@@ -16,4 +16,10 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    host: "0.0.0.0",
+    port: process.env.PORT || 4173,
+    // Allow any domain set in environment (Render injects HOSTNAME or your custom domain)
+    allowedHosts: [process.env.RENDER_EXTERNAL_HOSTNAME || "localhost"],
+  },
 }));
