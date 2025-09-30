@@ -8,9 +8,9 @@ export default function About() {
   const executives = [
     { name: 'Jacobs Odunayo M.', position: 'President', phone: '09052029197' },
     { name: 'Qazeem Anuoluwapo M.', position: 'Vice President', phone: '07089225441' },
-    { name: 'Adeyemi Adesewa', position: 'General Secretary-Elect', phone: '09138904056' },
-    { name: 'Adetola Emmanuel', position: 'Assistant General Secretary-Elect', phone: '08081995085' },
-    { name: 'Osuolale Anuoluwapo', position: 'Academic Director-Elect', phone: '08050230712' },
+    { name: 'Adeyemi Adesewa', position: 'General Secretary', phone: '09138904056' },
+    { name: 'Adetola Emmanuel', position: 'Assistant General Secretary', phone: '08081995085' },
+    { name: 'Osuolale Anuoluwapo', position: 'Academic Director', phone: '08050230712' },
     { name: 'Adekunle Ibukunoluwa A.', position: 'Editor in Chief', phone: '08142717108' },
     { name: 'Akintunde Oluwafisayomi', position: 'Treasurer', phone: '07025138913' },
     { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453' },
