@@ -13,7 +13,14 @@ connectDB();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://namssn.onrender.com',
+    'https://namssnapi.onrender.com',
+    'https://namssn-frontend.onrender.com',
+    'https://*.onrender.com'
+  ],
   credentials: true
 }));
 
