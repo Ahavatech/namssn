@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { academicAPI, authAPI } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +11,42 @@ import { Textarea } from '@/components/ui/textarea';
 import { Shield, User, Lock, AlertCircle, Calendar, Camera, BookOpen, Mail, PenTool, Users, Link, FolderOpen, Save, Upload, FileText, Download } from 'lucide-react';
 
 export default function Admin() {
+  // Event creation dialog state
+  const [eventDialogOpen, setEventDialogOpen] = useState(false);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    date: '',
+    description: '',
+    flyer: null
+  });
+  const [eventMessage, setEventMessage] = useState('');
+  const [eventLoading, setEventLoading] = useState(false);
+
+  const handleEventFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setEventForm({ ...eventForm, flyer: file });
+  };
+
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEventMessage('');
+    setEventLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', eventForm.title);
+      formData.append('date', eventForm.date);
+      formData.append('description', eventForm.description);
+      if (eventForm.flyer) formData.append('flyer', eventForm.flyer);
+      await eventsAPI.create(formData);
+      setEventMessage('Event created successfully!');
+      setEventForm({ title: '', date: '', description: '', flyer: null });
+      setEventDialogOpen(false);
+    } catch (err) {
+      setEventMessage('Failed to create event');
+    }
+    setEventLoading(false);
+    setTimeout(() => setEventMessage(''), 3000);
+  };
   const handleSaveLinks = async () => {
     setSaveMessage('');
     setLoadingLinks(true);
@@ -455,17 +492,69 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Create New Event
-                  </Button>
+                  <Dialog open={eventDialogOpen} onOpenChange={setEventDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start">
+                        Create New Event
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <span className="text-lg font-bold">Create New Event</span>
+                      </DialogHeader>
+                      <form onSubmit={handleCreateEvent} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="event-title">Title</Label>
+                          <Input
+                            id="event-title"
+                            value={eventForm.title}
+                            onChange={e => setEventForm({ ...eventForm, title: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-date">Date</Label>
+                          <Input
+                            id="event-date"
+                            type="date"
+                            value={eventForm.date}
+                            onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-description">Description</Label>
+                          <Textarea
+                            id="event-description"
+                            value={eventForm.description}
+                            onChange={e => setEventForm({ ...eventForm, description: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-flyer">Event Flyer (optional)</Label>
+                          <Input
+                            id="event-flyer"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleEventFileChange}
+                          />
+                        </div>
+                        {eventMessage && (
+                          <Alert className="mb-2">
+                            <AlertDescription>{eventMessage}</AlertDescription>
+                          </Alert>
+                        )}
+                        <DialogFooter>
+                          <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700" disabled={eventLoading}>
+                            {eventLoading ? 'Creating...' : 'Create Event'}
+                          </Button>
+                        </DialogFooter>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     Edit Upcoming Events
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Manage Event Registration
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Event Analytics
                   </Button>
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     Archive Past Events
