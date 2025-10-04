@@ -16,6 +16,9 @@ export default function Admin() {
   const [eventForm, setEventForm] = useState({
     title: '',
     date: '',
+    time: '',
+    location: '',
+    category: 'academic',
     description: '',
     flyer: null
   });
@@ -33,14 +36,17 @@ export default function Admin() {
     setEventLoading(true);
     try {
       const formData = new FormData();
-      formData.append('title', eventForm.title);
-      formData.append('date', eventForm.date);
-      formData.append('description', eventForm.description);
-      if (eventForm.flyer) formData.append('flyer', eventForm.flyer);
-      await eventsAPI.create(formData);
-      setEventMessage('Event created successfully!');
-      setEventForm({ title: '', date: '', description: '', flyer: null });
-      setEventDialogOpen(false);
+  formData.append('title', eventForm.title);
+  formData.append('date', eventForm.date);
+  formData.append('time', eventForm.time);
+  formData.append('location', eventForm.location);
+  formData.append('category', eventForm.category);
+  formData.append('description', eventForm.description);
+  if (eventForm.flyer) formData.append('featuredImage', eventForm.flyer);
+  await eventsAPI.create(formData);
+  setEventMessage('Event created successfully!');
+  setEventForm({ title: '', date: '', time: '', location: '', category: 'academic', description: '', flyer: null });
+  setEventDialogOpen(false);
     } catch (err) {
       setEventMessage('Failed to create event');
     }
@@ -521,6 +527,41 @@ export default function Admin() {
                             onChange={e => setEventForm({ ...eventForm, date: e.target.value })}
                             required
                           />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-time">Time</Label>
+                          <Input
+                            id="event-time"
+                            type="time"
+                            value={eventForm.time}
+                            onChange={e => setEventForm({ ...eventForm, time: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-location">Location</Label>
+                          <Input
+                            id="event-location"
+                            value={eventForm.location}
+                            onChange={e => setEventForm({ ...eventForm, location: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="event-category">Category</Label>
+                          <Select value={eventForm.category} onValueChange={value => setEventForm({ ...eventForm, category: value })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="academic">Academic</SelectItem>
+                              <SelectItem value="social">Social</SelectItem>
+                              <SelectItem value="professional">Professional</SelectItem>
+                              <SelectItem value="cultural">Cultural</SelectItem>
+                              <SelectItem value="sports">Sports</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="event-description">Description</Label>
