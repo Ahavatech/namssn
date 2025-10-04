@@ -1,29 +1,36 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { useEffect, useState } from 'react';
+import { eventsAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, BookOpen, Users, Award, ArrowRight, Bell, GraduationCap, Edit3, ShoppingBag } from 'lucide-react';
 
 export default function Index() {
+  // Event fetching state
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState('');
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setEventsLoading(true);
+      setEventsError('');
+      try {
+        const data = await eventsAPI.getAll();
+        setEvents(data.events || data);
+      } catch (err) {
+        setEventsError('Failed to fetch events');
+      }
+      setEventsLoading(false);
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
-      {/* Announcements Bar */}
-      <div className="bg-blue-600 text-white py-3">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center space-x-2 text-sm">
-            <Bell className="h-4 w-4" />
-            <span className="font-medium">Latest:</span>
-            <span>Registration for Mathematics Seminar 2024 is now open!</span>
-            <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700 ml-2">
-              Learn More
-            </Button>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section id="home" className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -42,7 +49,6 @@ export default function Index() {
                 </div>
               </div>
             </div>
-            
             <div className="mb-8">
               <p className="text-xl text-blue-600 font-semibold mb-4">
                 "Excellence in Mathematical Sciences Education"
@@ -52,7 +58,6 @@ export default function Index() {
                 Discover academic resources, engage with our community, and stay updated with the latest in mathematical sciences.
               </p>
             </div>
-
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                 <a href="/academics" className="flex items-center">
@@ -77,7 +82,6 @@ export default function Index() {
               Comprehensive resources and programs designed to enhance your mathematical sciences journey
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
               <CardHeader className="text-center">
@@ -93,7 +97,6 @@ export default function Index() {
                 </Button>
               </CardContent>
             </Card>
-
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
               <CardHeader className="text-center">
                 <Edit3 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -108,7 +111,6 @@ export default function Index() {
                 </Button>
               </CardContent>
             </Card>
-
             <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer">
               <CardHeader className="text-center">
                 <Calendar className="h-12 w-12 text-blue-600 mx-auto mb-4" />
@@ -146,66 +148,46 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Upcoming Events */}
+      {/* Upcoming Events (Dynamic) */}
       <section className="py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Upcoming Events</h2>
             <p className="text-lg text-gray-600">Stay updated with our latest academic and social programs</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Academic</Badge>
-                  <span className="text-sm text-gray-500">Dec 15, 2024</span>
-                </div>
-                <CardTitle>Mathematics Seminar 2024</CardTitle>
-                <CardDescription>
-                  Annual mathematics seminar featuring guest speakers and research presentations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" size="sm">Learn More</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Social</Badge>
-                  <span className="text-sm text-gray-500">Dec 20, 2024</span>
-                </div>
-                <CardTitle>End of Year Party</CardTitle>
-                <CardDescription>
-                  Celebrate the year's achievements with fellow mathematical science students
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" size="sm">Learn More</Button>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Badge variant="secondary">Workshop</Badge>
-                  <span className="text-sm text-gray-500">Jan 10, 2025</span>
-                </div>
-                <CardTitle>Research Methods Workshop</CardTitle>
-                <CardDescription>
-                  Learn essential research methodologies in mathematical sciences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" size="sm">Register Now</Button>
-              </CardContent>
-            </Card>
-          </div>
+          {eventsLoading ? (
+            <p className="text-center">Loading events...</p>
+          ) : eventsError ? (
+            <p className="text-center text-red-500">{eventsError}</p>
+          ) : events.length === 0 ? (
+            <p className="text-center text-gray-500">No upcoming events found.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event: any) => (
+                <Card key={event._id || event.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary">{event.category || 'Event'}</Badge>
+                      <span className="text-sm text-gray-500">{event.date} {event.time}</span>
+                    </div>
+                    <CardTitle>{event.title}</CardTitle>
+                    <CardDescription>{event.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {event.featuredImage && (
+                      <img src={event.featuredImage} alt="Event flyer" className="mb-2 max-h-32 rounded" />
+                    )}
+                    <div className="text-sm text-gray-600 mb-2">Location: {event.location}</div>
+                    {event.description && event.description.length > 120 && (
+                      <Button variant="outline" size="sm">Learn More</Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
-
       <Footer />
     </div>
   );
