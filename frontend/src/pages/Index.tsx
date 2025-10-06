@@ -5,13 +5,27 @@ import { eventsAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, BookOpen, Users, Award, ArrowRight, Bell, GraduationCap, Edit3, ShoppingBag } from 'lucide-react';
+import { Calendar, BookOpen, Users, Award, ArrowRight, Bell, GraduationCap, Edit3, ShoppingBag, Download } from 'lucide-react';
+
+// Newsletter type
+interface Newsletter {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  filename: string;
+  uploadDate: string;
+  fileUrl?: string;
+}
 
 export default function Index() {
   // Event fetching state
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState('');
+
+  // Newsletter state
+  const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -27,6 +41,21 @@ export default function Index() {
     };
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    // Fetch newsletters from localStorage or API
+    const stored = typeof window !== "undefined" ? localStorage.getItem("newsletters") : null;
+    if (stored) {
+      setNewsletters(JSON.parse(stored));
+    } else {
+      // Optionally fetch from API here
+      setNewsletters([]);
+    }
+  }, []);
+
+  const today = new Date().toISOString().split("T")[0];
+  const upcomingEvents = events.filter(ev => ev.date && ev.date >= today);
+  const latestNewsletters = newsletters.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-white">
@@ -159,11 +188,11 @@ export default function Index() {
             <p className="text-center">Loading events...</p>
           ) : eventsError ? (
             <p className="text-center text-red-500">{eventsError}</p>
-          ) : events.length === 0 ? (
+          ) : upcomingEvents.length === 0 ? (
             <p className="text-center text-gray-500">No upcoming events found.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {events.map((event: any) => (
+              {upcomingEvents.map((event: any) => (
                 <Card key={event._id || event.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
@@ -181,6 +210,37 @@ export default function Index() {
                     {event.description && event.description.length > 120 && (
                       <Button variant="outline" size="sm">Learn More</Button>
                     )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Latest Newsletters</h2>
+            <p className="text-lg text-gray-600">Read our latest publications and updates</p>
+          </div>
+          {latestNewsletters.length === 0 ? (
+            <p className="text-center text-gray-500">No newsletters available.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {latestNewsletters.map((newsletter) => (
+                <Card key={newsletter.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle>{newsletter.title}</CardTitle>
+                    <CardDescription>{newsletter.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-600 mb-2">Published: {new Date(newsletter.date).toLocaleDateString()}</div>
+                    <Button variant="outline" size="sm" onClick={() => window.open(newsletter.fileUrl || `/newsletters/${newsletter.filename}`, "_blank") }>
+                      <Download className="h-4 w-4 mr-1" />
+                      Preview
+                    </Button>
                   </CardContent>
                 </Card>
               ))}

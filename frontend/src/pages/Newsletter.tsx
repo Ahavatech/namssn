@@ -5,52 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Mail, Download, Calendar, Users, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from "react";
 
-export default function Newsletter() {
-  const newsletters = [
-    {
-      id: 1,
-      title: "MATHEMA Newsletter - December 2024",
-      date: "December 1, 2024",
-      description: "Year-end review, upcoming events, and student achievements",
-      downloadUrl: "#",
-      featured: true
-    },
-    {
-      id: 2,
-      title: "MATHEMA Newsletter - November 2024",
-      date: "November 1, 2024",
-      description: "Conference highlights, new research publications, and department news",
-      downloadUrl: "#",
-      featured: false
-    },
-    {
-      id: 3,
-      title: "MATHEMA Newsletter - October 2024",
-      date: "October 1, 2024",
-      description: "Welcome new students, faculty updates, and academic calendar",
-      downloadUrl: "#",
-      featured: false
-    },
-    {
-      id: 4,
-      title: "MATHEMA Newsletter - September 2024",
-      date: "September 1, 2024",
-      description: "New academic session kickoff, orientation highlights, and upcoming seminars",
-      downloadUrl: "#",
-      featured: false
+interface Newsletter {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  filename: string;
+  uploadDate: string;
+  fileUrl?: string;
+}
+
+export default function NewsletterPage() {
+  const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("newsletters") : null;
+    if (stored) {
+      setNewsletters(JSON.parse(stored));
+    } else {
+      setNewsletters([]);
     }
-  ];
-
-  const upcomingContent = [
-    "Editorial articles on mathematical breakthroughs",
-    "Student research spotlights",
-    "Faculty achievements and publications",
-    "Upcoming events and workshops",
-    "Alumni success stories",
-    "Department announcements"
-  ];
-
+  }, []);
   return (
     <div className="min-h-screen bg-white">
       <Header />
@@ -114,8 +90,27 @@ export default function Newsletter() {
                       </CardDescription>
                     </div>
                     <div className="flex flex-col space-y-2">
-                      <Button className="bg-blue-600 hover:bg-blue-700">
-                        <Download className="mr-2 h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+                          const token = localStorage.getItem("token");
+                          try {
+                            const res = await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
+                              method: "GET",
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (!res.ok) throw new Error("Failed to fetch PDF");
+                            const blob = await res.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            window.open(url, "_blank");
+                          } catch (err) {
+                            alert("Unable to preview newsletter PDF.");
+                          }
+                        }}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
                         Download PDF
                       </Button>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -147,10 +142,10 @@ export default function Newsletter() {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3">
-                    {upcomingContent.map((item, index) => (
+                    {newsletters.map((item, index) => (
                       <li key={index} className="flex items-center space-x-2">
                         <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">{item}</span>
+                        <span className="text-sm">{item.title}</span>
                       </li>
                     ))}
                   </ul>

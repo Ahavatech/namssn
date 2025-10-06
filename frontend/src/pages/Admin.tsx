@@ -1,4 +1,4 @@
-// Admin.tsx
+// Admin.tsx - Fixed Version
 import React, { useEffect, useState } from "react";
 import { academicAPI, authAPI, eventsAPI } from "@/lib/api";
 import {
@@ -15,6 +15,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogFooter,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,8 +39,6 @@ import {
   BookOpen,
   Mail,
   PenTool,
-  Users,
-  Link,
   FolderOpen,
   Save,
   Upload,
@@ -56,6 +56,25 @@ type EventItem = {
   category?: string;
   description?: string;
   featuredImage?: string;
+  status?: string;
+};
+
+type GalleryItem = {
+  _id?: string;
+  id?: string | number;
+  type: string;
+  title: string;
+  description?: string;
+};
+
+type Newsletter = {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  filename: string;
+  uploadDate: string;
+  fileUrl?: string;
 };
 
 export default function Admin() {
@@ -65,74 +84,6 @@ export default function Admin() {
     password: "",
     role: "",
   });
-    // Event edit/delete dialog state
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [editEventData, setEditEventData] = useState({
-      _id: '',
-      title: '',
-      date: '',
-      time: '',
-      location: '',
-      category: '',
-      description: ''
-    });
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [deleteEventData, setDeleteEventData] = useState<any>(null);
-
-    // Edit event handler
-    const handleEditEvent = (event: any) => {
-      setEditEventData({
-        _id: event._id || event.id,
-        title: event.title || '',
-        date: event.date || '',
-        time: event.time || '',
-        location: event.location || '',
-        category: event.category || '',
-        description: event.description || ''
-      });
-      setEditDialogOpen(true);
-    };
-
-    // Update event handler
-    const handleUpdateEvent = async (e: React.FormEvent) => {
-      e.preventDefault();
-      try {
-      const eventId = editEventData._id;
-      const form = new FormData();
-      form.append("title", editEventData.title);
-      form.append("date", editEventData.date);
-      form.append("time", editEventData.time);
-      form.append("location", editEventData.location);
-      form.append("category", editEventData.category);
-      form.append("description", editEventData.description);
-      // If you support flyer update, add: form.append("flyer", ...)
-      await eventsAPI.update(eventId, form);
-        setEditDialogOpen(false);
-        // Optionally refetch events
-        const data = await eventsAPI.getAll();
-        setEvents(data.events || data);
-      } catch (err) {
-        // handle error
-      }
-    };
-
-    // Delete event handler
-    const handleDeleteEvent = (event: any) => {
-      setDeleteEventData(event);
-      setDeleteDialogOpen(true);
-    };
-
-    const handleConfirmDelete = async () => {
-      try {
-        await eventsAPI.delete(deleteEventData._id || deleteEventData.id);
-        setDeleteDialogOpen(false);
-        // Optionally refetch events
-        const data = await eventsAPI.getAll();
-        setEvents(data.events || data);
-      } catch (err) {
-        // handle error
-      }
-    };
   const [error, setError] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string>("");
@@ -171,28 +122,36 @@ export default function Admin() {
   const [eventsLoading, setEventsLoading] = useState<boolean>(false);
   const [eventsError, setEventsError] = useState<string>("");
 
-  // --------- Newsletters state -------------
-  const [newsletterForm, setNewsletterForm] = useState<{
-    title: string;
-    description: string;
-    date: string;
-    file: File | null;
-  }>({
+  // Event edit/delete dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editEventData, setEditEventData] = useState({
+    _id: "",
+    title: "",
+    date: "",
+    time: "",
+    location: "",
+    category: "",
+    description: "",
+  });
+  const [newsletterDeleteDialogOpen, setNewsletterDeleteDialogOpen] = useState(false);
+  const [eventDeleteDialogOpen, setEventDeleteDialogOpen] = useState(false);
+  const [deleteEventData, setDeleteEventData] = useState<EventItem | null>(null);
+
+  // --------- Gallery Management State ---------
+  const [selectedGalleryEvent, setSelectedGalleryEvent] = useState("");
+  const [galleryForm, setGalleryForm] = useState({
     title: "",
     description: "",
-    date: "",
-    file: null,
+    type: "image",
+    file: null as File | null,
   });
-  const [uploadedNewsletters, setUploadedNewsletters] = useState<
-    Array<{
-      id: number;
-      title: string;
-      description: string;
-      date: string;
-      filename: string;
-      uploadDate: string;
-    }>
-  >([
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryMessage, setGalleryMessage] = useState("");
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [galleryCounts, setGalleryCounts] = useState({ images: 0, videos: 0 });
+
+  // --------- Newsletters state -------------
+  const defaultNewsletters: Newsletter[] = [
     {
       id: 1,
       title: "MATHEMA Newsletter - December 2024",
@@ -204,13 +163,25 @@ export default function Admin() {
     {
       id: 2,
       title: "MATHEMA Newsletter - November 2024",
-      description:
-        "Conference highlights, new research publications, and department news",
+      description: "Conference highlights, new research publications, and department news",
       date: "2024-11-01",
       filename: "mathema-november-2024.pdf",
       uploadDate: "2024-11-01",
     },
-  ]);
+  ];
+
+  const [uploadedNewsletters, setUploadedNewsletters] = useState<Newsletter[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("newsletters");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+      }
+    }
+    return defaultNewsletters;
+  });
   const [saveMessage, setSaveMessage] = useState<string>("");
 
   // --------- Drive links (Librarian) -------
@@ -223,7 +194,7 @@ export default function Admin() {
 
   // ---------- Effects ----------
   useEffect(() => {
-    // initialize auth state from localStorage if present
+    // Initialize auth state from localStorage if present
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
     if (token && userStr) {
@@ -238,24 +209,21 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    // fetch events on mount
+    if (typeof window !== "undefined") {
+      localStorage.setItem("newsletters", JSON.stringify(uploadedNewsletters));
+    }
+  }, [uploadedNewsletters]);
+
+  useEffect(() => {
+    // Fetch events on mount
     const fetchEvents = async () => {
       setEventsLoading(true);
       setEventsError("");
       try {
-        if (eventsAPI && typeof eventsAPI.getAll === "function") {
-          const data = await eventsAPI.getAll();
-          // support both { events: [...] } and direct array
-          const list: EventItem[] = Array.isArray(data)
-            ? data
-            : data?.events || data?.data || [];
-          setEvents(list);
-        } else {
-          // no backend — keep local events empty
-          setEvents([]);
-        }
-      } catch (err) {
-        setEventsError("Failed to fetch events");
+        const data = await eventsAPI.getAll();
+        setEvents(data.events || data);
+      } catch (err: any) {
+        setEventsError(err?.response?.data?.message || "Failed to fetch events");
       } finally {
         setEventsLoading(false);
       }
@@ -263,18 +231,32 @@ export default function Admin() {
     fetchEvents();
   }, []);
 
-  // ---------- Handlers ----------
+  // Fetch gallery items for selected event
+  useEffect(() => {
+    async function fetchGallery() {
+      if (!selectedGalleryEvent) {
+        setGalleryItems([]);
+        setGalleryCounts({ images: 0, videos: 0 });
+        return;
+      }
+      try {
+        const galleryAPI = await import("@/lib/api").then((m) => m.galleryAPI);
+        const res = await galleryAPI.getAll({ eventId: selectedGalleryEvent });
+        const items = res.items || res.data || [];
+        setGalleryItems(items);
+        setGalleryCounts({
+          images: items.filter((i: GalleryItem) => i.type === "image").length,
+          videos: items.filter((i: GalleryItem) => i.type === "video").length,
+        });
+      } catch {
+        setGalleryItems([]);
+        setGalleryCounts({ images: 0, videos: 0 });
+      }
+    }
+    fetchGallery();
+  }, [selectedGalleryEvent, galleryMessage]);
 
-  const handleEventFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setEventForm((prev) => ({ ...prev, flyer: file }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setNewsletterForm((prev) => ({ ...prev, file }));
-  };
-
+  // ---------- Event Handlers ----------
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -287,7 +269,6 @@ export default function Admin() {
         password: loginForm.password,
         role: loginForm.role,
       });
-      // expected shape: { token, user }
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res.user));
       setIsLoggedIn(true);
@@ -305,17 +286,20 @@ export default function Admin() {
     setUserRole("");
   };
 
+  const handleEventFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setEventForm((prev) => ({ ...prev, flyer: file }));
+  };
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     setEventMessage("");
-    // basic validation
     if (!eventForm.title || !eventForm.date || !eventForm.time) {
       setEventMessage("Please provide title, date and time for the event.");
       return;
     }
     setEventLoading(true);
     try {
-      // If there's an eventsAPI.create that accepts FormData
       if (eventsAPI && typeof eventsAPI.create === "function") {
         const form = new FormData();
         form.append("title", eventForm.title);
@@ -327,12 +311,10 @@ export default function Admin() {
         if (eventForm.flyer) form.append("flyer", eventForm.flyer);
 
         const created = await eventsAPI.create(form);
-        // assume created contains the new event
         const newEvent: EventItem = created?.event || created?.data || created;
         setEvents((prev) => [newEvent, ...prev]);
         setEventMessage("Event created successfully!");
       } else {
-        // If no backend exists, simulate add locally
         const newEvent: EventItem = {
           id: String(Date.now()),
           title: eventForm.title,
@@ -346,7 +328,6 @@ export default function Admin() {
         setEvents((prev) => [newEvent, ...prev]);
         setEventMessage("Event created locally (no backend).");
       }
-      // reset form
       setEventForm({
         title: "",
         date: "",
@@ -365,6 +346,56 @@ export default function Admin() {
     }
   };
 
+  const handleEditEvent = (event: EventItem) => {
+    setEditEventData({
+      _id: event._id || String(event.id),
+      title: event.title || "",
+      date: event.date || "",
+      time: event.time || "",
+      location: event.location || "",
+      category: event.category || "",
+      description: event.description || "",
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const eventId = editEventData._id;
+      const form = new FormData();
+      form.append("title", editEventData.title);
+      form.append("date", editEventData.date);
+      form.append("time", editEventData.time);
+      form.append("location", editEventData.location);
+      form.append("category", editEventData.category);
+      form.append("description", editEventData.description);
+      await eventsAPI.update(String(eventId), form);
+      setEditDialogOpen(false);
+      const data = await eventsAPI.getAll();
+      setEvents(data.events || data);
+    } catch (err: any) {
+      setEventMessage(err?.response?.data?.message || "Failed to update event");
+    }
+  };
+
+  const handleDeleteEvent = (event: EventItem) => {
+  setDeleteEventData(event);
+  setEventDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteEventData) return;
+    try {
+      await eventsAPI.delete(deleteEventData._id || String(deleteEventData.id));
+  setEventDeleteDialogOpen(false);
+      const data = await eventsAPI.getAll();
+      setEvents(data.events || data);
+    } catch (err: any) {
+      setEventMessage(err?.response?.data?.message || "Failed to delete event");
+    }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPwMessage("");
@@ -378,7 +409,6 @@ export default function Admin() {
     }
     setPwLoading(true);
     try {
-      // lazy import or call changePasswordAPI
       const { changePasswordAPI } = await import("@/lib/api");
       if (!changePasswordAPI || typeof changePasswordAPI.change !== "function") {
         throw new Error("changePassword API not available");
@@ -394,36 +424,123 @@ export default function Admin() {
     }
   };
 
-  const handleNewsletterUpload = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newsletterForm.title || !newsletterForm.description || !newsletterForm.date) {
-      setSaveMessage("Please fill in all newsletter fields");
-      return;
-    }
-    const newNewsletter = {
-      id: uploadedNewsletters.length + 1,
-      title: newsletterForm.title,
-      description: newsletterForm.description,
-      date: newsletterForm.date,
-      filename: newsletterForm.file ? newsletterForm.file.name : "newsletter.pdf",
-      uploadDate: new Date().toISOString().split("T")[0],
-    };
-    setUploadedNewsletters((prev) => [newNewsletter, ...prev]);
-    setNewsletterForm({ title: "", description: "", date: "", file: null });
-    setSaveMessage("Newsletter uploaded successfully and added to archive!");
-    setTimeout(() => setSaveMessage(""), 3000);
+  const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setGalleryForm((prev) => ({ ...prev, file }));
   };
 
-  const deleteNewsletter = (id: number) => {
-    setUploadedNewsletters((prev) => prev.filter((n) => n.id !== id));
-    setSaveMessage("Newsletter deleted successfully!");
-    setTimeout(() => setSaveMessage(""), 3000);
+  const handleGalleryUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setGalleryMessage("");
+    if (!selectedGalleryEvent) {
+      setGalleryMessage("Please select a past event.");
+      return;
+    }
+    if (!galleryForm.title || !galleryForm.type || !galleryForm.file) {
+      setGalleryMessage("Please fill all required fields and select a file.");
+      return;
+    }
+    setGalleryLoading(true);
+    try {
+      const form = new FormData();
+      form.append("title", galleryForm.title);
+      form.append("description", galleryForm.description);
+      form.append("type", galleryForm.type);
+      form.append("category", "events");
+      form.append("eventId", selectedGalleryEvent);
+      form.append("media", galleryForm.file);
+      const galleryAPI = await import("@/lib/api").then((m) => m.galleryAPI);
+      await galleryAPI.upload(form);
+      setGalleryMessage("Media uploaded successfully!");
+      setGalleryForm({ title: "", description: "", type: "image", file: null });
+      setSelectedGalleryEvent("");
+    } catch (err: any) {
+      setGalleryMessage(err?.response?.data?.message || "Failed to upload media");
+    } finally {
+      setGalleryLoading(false);
+      setTimeout(() => setGalleryMessage(""), 4000);
+    }
+  };
+
+  const [newsletterForm, setNewsletterForm] = useState<{
+    title: string;
+    description: string;
+    date: string;
+    file: File | null;
+  }>({
+    title: "",
+    description: "",
+    date: "",
+    file: null,
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setNewsletterForm((prev) => ({ ...prev, file }));
+  };
+
+  const handleNewsletterUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterForm.title || !newsletterForm.description || !newsletterForm.date || !newsletterForm.file) {
+      setSaveMessage("Please fill in all newsletter fields and select a PDF file");
+      return;
+    }
+    try {
+      // Upload PDF to backend, not Cloudinary
+      const formData = new FormData();
+      formData.append("title", newsletterForm.title);
+      formData.append("description", newsletterForm.description);
+      formData.append("date", newsletterForm.date);
+      formData.append("pdf", newsletterForm.file!);
+      // You may need to add other fields as required by your backend
+      const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${apiUrl}/newsletters`, {
+        method: "POST",
+        body: formData,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error("Failed to upload newsletter PDF");
+      const data = await res.json();
+      // Expect backend to return newsletter object with Cloudinary URL
+      const newNewsletter: Newsletter = {
+        id: data.id || uploadedNewsletters.length + 1,
+        title: data.title,
+        description: data.description,
+        date: data.date,
+        filename: data.filename || newsletterForm.file.name,
+        uploadDate: data.uploadDate || new Date().toISOString().split("T")[0],
+        fileUrl: data.pdfUrl,
+      };
+      setUploadedNewsletters((prev) => [newNewsletter, ...prev]);
+      setNewsletterForm({ title: "", description: "", date: "", file: null });
+      setSaveMessage("Newsletter uploaded and added to archive!");
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (err: any) {
+      setSaveMessage(err?.message || "Failed to upload newsletter PDF");
+    }
+  };
+
+  // Confirmation dialog state for newsletter delete
+  // Remove duplicate declaration here, keep only the one near newsletter logic
+
+  const confirmDeleteNewsletter = (id: number) => {
+    setNewsletterToDelete(id);
+  setNewsletterDeleteDialogOpen(true);
+  };
+
+  const handleDeleteNewsletter = () => {
+    if (newsletterToDelete !== null) {
+      setUploadedNewsletters((prev) => prev.filter((n) => n.id !== newsletterToDelete));
+      setSaveMessage("Newsletter deleted successfully!");
+      setTimeout(() => setSaveMessage(""), 3000);
+      setNewsletterToDelete(null);
+  setNewsletterDeleteDialogOpen(false);
+    }
   };
 
   const handleSaveLinks = () => {
-    // stubbed: you may want to call an API to persist these
     setSaveMessage("Drive links updated successfully!");
-    // optional: persist to localStorage
     localStorage.setItem("driveLinks", JSON.stringify(driveLinks));
     setTimeout(() => setSaveMessage(""), 3000);
   };
@@ -520,7 +637,6 @@ export default function Admin() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Global success message */}
         {saveMessage && (
           <Alert className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -633,6 +749,7 @@ export default function Admin() {
                         value={newsletterForm.title}
                         onChange={(e) => setNewsletterForm({ ...newsletterForm, title: e.target.value })}
                         placeholder="e.g., MATHEMA Newsletter - January 2025"
+                        required
                       />
                     </div>
                     <div className="space-y-2">
@@ -642,6 +759,7 @@ export default function Admin() {
                         type="date"
                         value={newsletterForm.date}
                         onChange={(e) => setNewsletterForm({ ...newsletterForm, date: e.target.value })}
+                        required
                       />
                     </div>
                   </div>
@@ -653,6 +771,7 @@ export default function Admin() {
                       onChange={(e) => setNewsletterForm({ ...newsletterForm, description: e.target.value })}
                       placeholder="Brief description of newsletter content..."
                       className="min-h-[80px]"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -663,9 +782,10 @@ export default function Admin() {
                       accept=".pdf"
                       onChange={handleFileChange}
                       className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      required
                     />
                   </div>
-                  <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+                  <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={newsletterForm.file === null || !newsletterForm.title || !newsletterForm.description || !newsletterForm.date}>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload Newsletter
                   </Button>
@@ -696,16 +816,50 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+                            const token = localStorage.getItem("token");
+                            try {
+                              const res = await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
+                                method: "GET",
+                                headers: token ? { Authorization: `Bearer ${token}` } : {},
+                              });
+                              if (!res.ok) throw new Error("Failed to fetch PDF");
+                              const blob = await res.blob();
+                              const url = window.URL.createObjectURL(blob);
+                              window.open(url, "_blank");
+                            } catch (err) {
+                              alert("Unable to preview newsletter PDF.");
+                            }
+                          }}
+                        >
                           <Download className="h-4 w-4 mr-1" />
                           Preview
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => deleteNewsletter(newsletter.id)}>
+                        <Button variant="destructive" size="sm" onClick={() => confirmDeleteNewsletter(newsletter.id)}>
                           Delete
                         </Button>
                       </div>
                     </div>
                   ))}
+                  {/* Newsletter Delete Confirmation Dialog */}
+                  <Dialog open={newsletterDeleteDialogOpen} onOpenChange={setNewsletterDeleteDialogOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete Newsletter?</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this newsletter? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setNewsletterDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleDeleteNewsletter}>Delete</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                   {uploadedNewsletters.length === 0 && (
                     <p className="text-center text-gray-500 py-8">No newsletters uploaded yet</p>
                   )}
@@ -829,12 +983,10 @@ export default function Admin() {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Quick actions */}
                   <Button variant="outline" size="sm" className="w-full justify-start">
                     Archive Past Events
                   </Button>
 
-                  {/* Event list with edit/delete actions */}
                   <div className="mt-6">
                     <h3 className="font-semibold mb-2">All Events</h3>
                     {eventsLoading ? (
@@ -845,7 +997,7 @@ export default function Admin() {
                       <p>No events found.</p>
                     ) : (
                       <ul className="space-y-2">
-                        {events.map((event: any) => (
+                        {events.map((event) => (
                           <li key={event._id || event.id} className="flex items-center justify-between border rounded px-4 py-2">
                             <span className="font-medium text-gray-900">{event.title}</span>
                             <span className="flex items-center space-x-2">
@@ -870,14 +1022,12 @@ export default function Admin() {
                     )}
                   </div>
 
-                  {/* Edit Event Dialog */}
                   <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
                     <DialogContent>
                       <DialogHeader>
                         <span className="text-lg font-bold">Edit Event</span>
                       </DialogHeader>
                       <form onSubmit={handleUpdateEvent} className="space-y-4">
-                        {/* Same fields as create, pre-filled with editEventData */}
                         <div className="space-y-2">
                           <Label htmlFor="edit-event-title">Title</Label>
                           <Input
@@ -941,15 +1091,14 @@ export default function Admin() {
                     </DialogContent>
                   </Dialog>
 
-                  {/* Delete Confirmation Dialog */}
-                  <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <Dialog open={eventDeleteDialogOpen} onOpenChange={setEventDeleteDialogOpen}>
                     <DialogContent>
                       <DialogHeader>
                         <span className="text-lg font-bold text-red-600">Delete Event</span>
                       </DialogHeader>
                       <div className="mb-4">Are you sure you want to delete <span className="font-semibold">{deleteEventData?.title}</span>?</div>
                       <div className="flex justify-end space-x-2">
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button variant="outline" onClick={() => setEventDeleteDialogOpen(false)}>Cancel</Button>
                         <Button variant="destructive" onClick={handleConfirmDelete}>Delete</Button>
                       </div>
                     </DialogContent>
@@ -958,7 +1107,7 @@ export default function Admin() {
               </CardContent>
             </Card>
 
-            {/* Gallery, Book Club, etc. (kept as buttons for now) */}
+            {/* Gallery Management */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
@@ -968,17 +1117,108 @@ export default function Admin() {
                 <CardDescription>Upload and organize event photos and media</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Upload New Photos
+                <form onSubmit={handleGalleryUpload} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery-event">Select Past Event</Label>
+                    <select
+                      id="gallery-event"
+                      className="w-full border rounded px-2 py-1"
+                      value={selectedGalleryEvent}
+                      onChange={e => {
+                        setSelectedGalleryEvent(e.target.value);
+                        const event = events.find(ev => (ev._id || ev.id) === e.target.value);
+                        if (event) {
+                          setGalleryForm({
+                            ...galleryForm,
+                            title: event.title,
+                            description: event.description || ""
+                          });
+                        } else {
+                          setGalleryForm({ ...galleryForm, title: "", description: "" });
+                        }
+                      }}
+                      title="Select Past Event"
+                    >
+                      <option value="">-- Select --</option>
+                      {events
+                        .filter(ev => {
+                          const today = "2025-10-06";
+                          return (ev.date && ev.date < today) || ev.status === 'completed';
+                        })
+                        .map(ev => (
+                          <option key={ev._id || ev.id} value={ev._id || ev.id}>
+                            {ev.title} ({ev.date})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  {selectedGalleryEvent && (
+                    <div className="flex items-center space-x-4 mb-2">
+                      <span className="text-sm text-gray-600">Images: {galleryCounts.images}/10</span>
+                      <span className="text-sm text-gray-600">Videos: {galleryCounts.videos}/2</span>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery-title">Title</Label>
+                    <Input
+                      id="gallery-title"
+                      value={galleryForm.title}
+                      disabled={!!selectedGalleryEvent}
+                      onChange={e => setGalleryForm({ ...galleryForm, title: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery-description">Description</Label>
+                    <Textarea
+                      id="gallery-description"
+                      value={galleryForm.description}
+                      disabled={!!selectedGalleryEvent}
+                      onChange={e => setGalleryForm({ ...galleryForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery-type">Media Type</Label>
+                    <select
+                      id="gallery-type"
+                      className="w-full border rounded px-2 py-1"
+                      value={galleryForm.type}
+                      onChange={e => setGalleryForm({ ...galleryForm, type: e.target.value })}
+                      disabled={galleryCounts.images >= 10 && galleryForm.type === "image" || galleryCounts.videos >= 2 && galleryForm.type === "video"}
+                      title="Select Media Type"
+                    >
+                      <option value="image" disabled={galleryCounts.images >= 10}>Image</option>
+                      <option value="video" disabled={galleryCounts.videos >= 2}>Video</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gallery-file">Upload File</Label>
+                    <Input
+                      id="gallery-file"
+                      type="file"
+                      accept={galleryForm.type === "image" ? "image/*" : "video/*"}
+                      onChange={handleGalleryFileChange}
+                      required
+                      disabled={galleryCounts.images >= 10 && galleryForm.type === "image" || galleryCounts.videos >= 2 && galleryForm.type === "video"}
+                    />
+                  </div>
+                  {galleryMessage && (
+                    <Alert className="mb-2">
+                      <AlertDescription>{galleryMessage}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full bg-pink-600 hover:bg-pink-700"
+                    disabled={galleryLoading || (galleryCounts.images >= 10 && galleryForm.type === "image") || (galleryCounts.videos >= 2 && galleryForm.type === "video")}
+                  >
+                    {galleryLoading ? "Uploading..." : "Upload Media"}
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Organize Photo Albums
-                  </Button>
-                </div>
+                </form>
               </CardContent>
             </Card>
 
+            {/* Book Club Management */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
@@ -1004,7 +1244,6 @@ export default function Admin() {
         {/* Librarian Dashboard */}
         {userRole === "Librarian" && (
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* Change Password (same handler) */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
@@ -1063,7 +1302,6 @@ export default function Admin() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Part 1 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -1090,7 +1328,6 @@ export default function Admin() {
                 </CardContent>
               </Card>
 
-              {/* Part 2 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -1117,7 +1354,6 @@ export default function Admin() {
                 </CardContent>
               </Card>
 
-              {/* Part 3 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
@@ -1144,7 +1380,6 @@ export default function Admin() {
                 </CardContent>
               </Card>
 
-              {/* Part 4 */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
