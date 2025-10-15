@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Mail, Download, Calendar, Users, CheckCircle } from 'lucide-react';
 import { useEffect, useState } from "react";
+import { newsletterAPI } from '@/lib/api';
 
 interface Newsletter {
   id: number;
@@ -15,17 +16,57 @@ interface Newsletter {
   filename: string;
   uploadDate: string;
   fileUrl?: string;
+  featured?: boolean;
 }
 
 export default function NewsletterPage() {
   const [newsletters, setNewsletters] = useState<Newsletter[]>([]);
+
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("newsletters") : null;
-    if (stored) {
-      setNewsletters(JSON.parse(stored));
-    } else {
-      setNewsletters([]);
-    }
+    let mounted = true;
+    const fetchNewsletters = async () => {
+      try {
+        const data = await newsletterAPI.getAll();
+        const rawList = Array.isArray(data) ? data : data.newsletters || data.data || [];
+        // Normalize backend fields to our Newsletter interface
+        const list: Newsletter[] = rawList.map((item: any) => ({
+          id: item._id || item.id || String(item._id || item.id || ''),
+          title: item.title || item.name || '',
+          description: item.description || item.summary || '',
+          date: item.publishDate ? new Date(item.publishDate).toISOString().split('T')[0] : (item.date || item.uploadDate || ''),
+          filename: item.filename || (item.pdfUrl ? item.pdfUrl.split('/').pop() || '' : ''),
+          uploadDate: item.uploadDate || item.publishDate || '',
+          fileUrl: item.pdfUrl || item.fileUrl || item.pdf || undefined,
+        }));
+
+        // Mark the most recent as featured (optional)
+        if (list.length > 0) {
+          list[0].featured = true;
+        }
+
+        if (!mounted) return;
+        setNewsletters(list);
+        try {
+          localStorage.setItem('newsletters', JSON.stringify(list));
+        } catch {}
+      } catch (err) {
+        // Only fall back to localStorage when backend is unreachable
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('newsletters') : null;
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) setNewsletters(parsed as Newsletter[]);
+            else setNewsletters([]);
+          } catch {
+            setNewsletters([]);
+          }
+        } else {
+          setNewsletters([]);
+        }
+      }
+    };
+    fetchNewsletters();
+    return () => { mounted = false };
   }, []);
   return (
     <div className="min-h-screen bg-white">
@@ -95,8 +136,25 @@ export default function NewsletterPage() {
                         size="sm"
                         onClick={async () => {
                           const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+                          const apiOrigin = apiUrl.replace(/\/api\/?$/, '');
                           const token = localStorage.getItem("token");
                           try {
+                            // Prefer opening an API-hosted preview URL using the filename
+                            if (newsletter.filename) {
+                              // Track download (best-effort)
+                              try {
+                                await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
+                                  method: 'POST',
+                                  headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+                                });
+                              } catch {}
+
+                              const previewUrl = `${apiOrigin}/api/newsletters/public/${encodeURIComponent(newsletter.filename)}`;
+                              window.open(previewUrl, '_blank');
+                              return;
+                            }
+
+                            // Fallback: request PDF blob from API download endpoint
                             const res = await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
                               method: "GET",
                               headers: token ? { Authorization: `Bearer ${token}` } : {},

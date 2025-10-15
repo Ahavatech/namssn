@@ -1,7 +1,7 @@
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useEffect, useState } from 'react';
-import { eventsAPI } from '@/lib/api';
+import { eventsAPI, newsletterAPI } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,14 +43,32 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    // Fetch newsletters from localStorage or API
-    const stored = typeof window !== "undefined" ? localStorage.getItem("newsletters") : null;
-    if (stored) {
-      setNewsletters(JSON.parse(stored));
-    } else {
-      // Optionally fetch from API here
-      setNewsletters([]);
-    }
+    let mounted = true;
+    const fetchNewsletters = async () => {
+      try {
+        const data = await newsletterAPI.getAll();
+        const rawList = Array.isArray(data) ? data : data.newsletters || data.data || [];
+        const list: Newsletter[] = rawList.map((item: any) => ({
+          id: item._id || item.id || Number(item.id) || 0,
+          title: item.title || item.name || '',
+          description: item.description || item.summary || '',
+          date: item.publishDate ? new Date(item.publishDate).toISOString().split('T')[0] : (item.date || item.uploadDate || ''),
+          filename: item.filename || (item.pdfUrl ? item.pdfUrl.split('/').pop() || '' : ''),
+          uploadDate: item.uploadDate || item.publishDate || '',
+          fileUrl: item.pdfUrl || item.fileUrl || item.pdf || undefined,
+        }));
+        if (!mounted) return;
+        setNewsletters(list);
+        try { localStorage.setItem('newsletters', JSON.stringify(list)); } catch {}
+      } catch (err) {
+        const stored = typeof window !== 'undefined' ? localStorage.getItem('newsletters') : null;
+        if (stored) {
+          try { setNewsletters(JSON.parse(stored)); } catch { setNewsletters([]); }
+        } else setNewsletters([]);
+      }
+    };
+    fetchNewsletters();
+    return () => { mounted = false };
   }, []);
 
   const today = new Date().toISOString().split("T")[0];
@@ -237,7 +255,21 @@ export default function Index() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-sm text-gray-600 mb-2">Published: {new Date(newsletter.date).toLocaleDateString()}</div>
-                    <Button variant="outline" size="sm" onClick={() => window.open(newsletter.fileUrl || `/newsletters/${newsletter.filename}`, "_blank") }>
+                    <Button variant="outline" size="sm" onClick={async () => {
+                      const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+                      const apiOrigin = apiUrl.replace(/\/api\/?$/, '');
+                      try {
+                        if (newsletter.filename) {
+                          // best-effort tracking
+                          try { await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, { method: 'POST' }); } catch {}
+                          window.open(`${apiOrigin}/api/newsletters/public/${encodeURIComponent(newsletter.filename)}`, '_blank');
+                          return;
+                        }
+                        window.open(newsletter.fileUrl || `/newsletters/${newsletter.filename}`, "_blank");
+                      } catch {
+                        window.open(newsletter.fileUrl || `/newsletters/${newsletter.filename}`, "_blank");
+                      }
+                    }}>
                       <Download className="h-4 w-4 mr-1" />
                       Preview
                     </Button>

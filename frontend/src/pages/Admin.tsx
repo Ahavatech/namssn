@@ -1,6 +1,6 @@
 // Admin.tsx - Fixed Version
 import React, { useEffect, useState } from "react";
-import { academicAPI, authAPI, eventsAPI } from "@/lib/api";
+import { academicAPI, authAPI, eventsAPI, newsletterAPI } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -151,25 +151,8 @@ export default function Admin() {
   const [galleryCounts, setGalleryCounts] = useState({ images: 0, videos: 0 });
 
   // --------- Newsletters state -------------
-  const defaultNewsletters: Newsletter[] = [
-    {
-      id: 1,
-      title: "MATHEMA Newsletter - December 2024",
-      description: "Year-end review, upcoming events, and student achievements",
-      date: "2024-12-01",
-      filename: "mathema-december-2024.pdf",
-      uploadDate: "2024-12-01",
-    },
-    {
-      id: 2,
-      title: "MATHEMA Newsletter - November 2024",
-      description: "Conference highlights, new research publications, and department news",
-      date: "2024-11-01",
-      filename: "mathema-november-2024.pdf",
-      uploadDate: "2024-11-01",
-    },
-  ];
-
+  // Start with any saved newsletters in localStorage, but default to an empty list.
+  // We'll populate this from the server when the component mounts.
   const [uploadedNewsletters, setUploadedNewsletters] = useState<Newsletter[]>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("newsletters");
@@ -180,9 +163,36 @@ export default function Admin() {
         } catch {}
       }
     }
-    return defaultNewsletters;
+    return [];
   });
   const [saveMessage, setSaveMessage] = useState<string>("");
+  const [newsletterToDelete, setNewsletterToDelete] = useState<number | null>(null);
+  // Fetch server newsletters on mount and update local state
+  useEffect(() => {
+    let mounted = true;
+    const fetchServerNewsletters = async () => {
+      try {
+        const data = await newsletterAPI.getAll();
+        const rawList = Array.isArray(data) ? data : data.newsletters || data.data || [];
+        const list: Newsletter[] = rawList.map((item: any, idx: number) => ({
+          id: item._id || item.id || idx,
+          title: item.title || item.name || '',
+          description: item.description || item.summary || '',
+          date: item.publishDate ? new Date(item.publishDate).toISOString().split('T')[0] : (item.date || item.uploadDate || ''),
+          filename: item.filename || (item.pdfUrl ? item.pdfUrl.split('/').pop() || '' : ''),
+          uploadDate: item.uploadDate || item.publishDate || '',
+          fileUrl: item.pdfUrl || item.fileUrl || item.pdf || undefined,
+        }));
+        if (!mounted) return;
+        setUploadedNewsletters(list);
+        try { localStorage.setItem('newsletters', JSON.stringify(list)); } catch {}
+      } catch (err) {
+        // keep any existing localStorage value or empty list
+      }
+    };
+    fetchServerNewsletters();
+    return () => { mounted = false };
+  }, []);
 
   // --------- Drive links (Librarian) -------
   const [driveLinks, setDriveLinks] = useState({
@@ -241,7 +251,7 @@ export default function Admin() {
       }
       try {
         const galleryAPI = await import("@/lib/api").then((m) => m.galleryAPI);
-        const res = await galleryAPI.getAll({ eventId: selectedGalleryEvent });
+  const res = await galleryAPI.getAll({ eventId: Number(selectedGalleryEvent) });
         const items = res.items || res.data || [];
         setGalleryItems(items);
         setGalleryCounts({
@@ -503,12 +513,14 @@ export default function Admin() {
       if (!res.ok) throw new Error("Failed to upload newsletter PDF");
       const data = await res.json();
       // Expect backend to return newsletter object with Cloudinary URL
+      // Derive filename: prefer backend-provided filename, else use provided file name, else extract from pdfUrl
+      const derivedFilename = data.filename || newsletterForm.file?.name || (data.pdfUrl ? data.pdfUrl.split('/').pop() : undefined) || '';
       const newNewsletter: Newsletter = {
         id: data.id || uploadedNewsletters.length + 1,
         title: data.title,
         description: data.description,
         date: data.date,
-        filename: data.filename || newsletterForm.file.name,
+        filename: derivedFilename,
         uploadDate: data.uploadDate || new Date().toISOString().split("T")[0],
         fileUrl: data.pdfUrl,
       };
@@ -820,21 +832,27 @@ export default function Admin() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
-                            const token = localStorage.getItem("token");
-                            try {
-                              const res = await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
-                                method: "GET",
-                                headers: token ? { Authorization: `Bearer ${token}` } : {},
-                              });
-                              if (!res.ok) throw new Error("Failed to fetch PDF");
-                              const blob = await res.blob();
-                              const url = window.URL.createObjectURL(blob);
-                              window.open(url, "_blank");
-                            } catch (err) {
-                              alert("Unable to preview newsletter PDF.");
-                            }
-                          }}
+                              const apiUrl = import.meta.env.VITE_API_URL || "https://namssnapi.onrender.com/api";
+                              const apiOrigin = apiUrl.replace(/\/api\/?$/, '');
+                              const token = localStorage.getItem("token");
+                              try {
+                                if (newsletter.filename) {
+                                  try { await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {} }); } catch {}
+                                  window.open(`${apiOrigin}/api/newsletters/public/${encodeURIComponent(newsletter.filename)}`, '_blank');
+                                  return;
+                                }
+                                const res = await fetch(`${apiUrl}/newsletters/${newsletter.id}/download`, {
+                                  method: "GET",
+                                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                });
+                                if (!res.ok) throw new Error("Failed to fetch PDF");
+                                const blob = await res.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                window.open(url, "_blank");
+                              } catch (err) {
+                                alert("Unable to preview newsletter PDF.");
+                              }
+                            }}
                         >
                           <Download className="h-4 w-4 mr-1" />
                           Preview
