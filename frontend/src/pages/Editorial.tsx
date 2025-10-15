@@ -1,4 +1,5 @@
 import Header from '@/components/Header';
+import { useState, useEffect } from 'react';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,58 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Calendar, User, Search, BookOpen, TrendingUp } from 'lucide-react';
 
 export default function Editorial() {
-  const featuredArticles = [
-    {
-      id: 1,
-      title: 'The Beauty of Mathematical Proofs',
-      excerpt: 'Exploring the elegance and logic behind mathematical demonstrations...',
-      author: 'Dr. Sarah Johnson',
-      date: '2024-11-15',
-      category: 'Mathematics',
-      readTime: '5 min read'
-    },
-    {
-      id: 2,
-      title: 'Applications of Statistics in Modern Research',
-      excerpt: 'How statistical methods are revolutionizing scientific discovery...',
-      author: 'Prof. Michael Chen',
-      date: '2024-11-10',
-      category: 'Statistics',
-      readTime: '7 min read'
-    },
-    {
-      id: 3,
-      title: 'Career Paths for Mathematics Graduates',
-      excerpt: 'Exploring diverse opportunities in industry, academia, and research...',
-      author: 'Alumni Network',
-      date: '2024-11-05',
-      category: 'Career',
-      readTime: '6 min read'
-    }
-  ];
+  const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);
 
-  const recentPosts = [
-    {
-      title: 'Understanding Complex Numbers',
-      category: 'Mathematics',
-      date: '2024-11-20'
-    },
-    {
-      title: 'Data Science Fundamentals',
-      category: 'Statistics',
-      date: '2024-11-18'
-    },
-    {
-      title: 'Mathematical Modeling in Biology',
-      category: 'Applied Math',
-      date: '2024-11-16'
-    },
-    {
-      title: 'The History of Calculus',
-      category: 'History',
-      date: '2024-11-14'
-    }
-  ];
 
   const categories = [
     { name: 'Mathematics', count: 15 },
@@ -68,6 +20,25 @@ export default function Editorial() {
     { name: 'Research', count: 10 },
     { name: 'Opinion', count: 7 }
   ];
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+        const res = await fetch(`${apiUrl}/articles?status=published&limit=10`);
+        if (!res.ok) throw new Error('Failed to fetch articles');
+        const data = await res.json();
+        const articles = data.articles || data || [];
+        if (!mounted) return;
+        setFeaturedArticles(articles.slice(0, 3));
+        setRecentPosts(articles.slice(0, 6));
+      } catch (err) {
+        // ignore errors, leave lists empty
+      }
+    })();
+    return () => { mounted = false };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -90,6 +61,8 @@ export default function Editorial() {
                 className="pl-10 pr-4 py-2"
               />
             </div>
+
+            
           </div>
         </div>
       </section>

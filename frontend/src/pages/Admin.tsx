@@ -41,6 +41,8 @@ import {
   PenTool,
   FolderOpen,
   Save,
+  Edit3,
+  Trash2,
   Upload,
   FileText,
   Download,
@@ -150,6 +152,166 @@ export default function Admin() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [galleryCounts, setGalleryCounts] = useState({ images: 0, videos: 0 });
 
+  // --------- Article Management (Admin only) ---------
+  const [articles, setArticles] = useState<any[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [createStep, setCreateStep] = useState(0);
+  const [articleSubmitting, setArticleSubmitting] = useState(false);
+  const [articleForm, setArticleForm] = useState({
+    topic: '',
+    author: '',
+    category: '',
+    cover: null as File | null,
+    body: ''
+  });
+  const categoriesList = [
+    'Mathematics',
+    'Applied Mathematics',
+    'Statistics & Data Science',
+    'Research & Innovation',
+    'Opinion & Editorials',
+    'Career & Development',
+    'Campus & Culture'
+  ];
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const resetArticleForm = () => {
+    setArticleForm({ topic: '', author: '', category: '', cover: null, body: '' });
+    setCreateStep(0);
+    setEditingId(null);
+  };
+
+  const handleCreateNext = () => setCreateStep((s) => Math.min(s + 1, 2));
+  const handleCreateBack = () => setCreateStep((s) => Math.max(s - 1, 0));
+
+  const handleCreateSubmit = async () => {
+    // Create or update article via backend
+    console.log('[Admin] handleCreateSubmit called', { editingId, articleForm });
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+        const token = localStorage.getItem('token');
+        const fetchForm = new FormData();
+        fetchForm.append('title', articleForm.topic);
+        fetchForm.append('content', articleForm.body);
+        fetchForm.append('excerpt', articleForm.body.slice(0, 200));
+        fetchForm.append('author', articleForm.author);
+        fetchForm.append('category', articleForm.category);
+        fetchForm.append('status', 'published');
+        if (articleForm.cover) fetchForm.append('featuredImage', articleForm.cover);
+
+        setArticleSubmitting(true);
+
+        if (editingId) {
+          console.log('[Admin] fetch PUT /articles', editingId);
+          const res = await fetch(`${apiUrl}/articles/${editingId}`, {
+            method: 'PUT',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: fetchForm as unknown as BodyInit,
+          });
+          if (!res.ok) throw new Error('Failed to update article');
+          const updated = await res.json();
+          console.log('[Admin] article updated', updated);
+          await loadArticles();
+        } else {
+          console.log('[Admin] fetch POST /articles');
+          const res = await fetch(`${apiUrl}/articles`, {
+            method: 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: fetchForm as unknown as BodyInit,
+          });
+          if (!res.ok) throw new Error('Failed to create article');
+          const created = await res.json();
+          console.log('[Admin] article created', created);
+          await loadArticles();
+        }
+
+      resetArticleForm();
+      setCreateOpen(false);
+    } catch (err: any) {
+      console.error('[Admin] handleCreateSubmit error', err);
+      // If the error was a timeout, attempt a direct fetch as a fallback test to rule out Axios/config issues
+      if (err?.message === 'request-timeout') {
+        try {
+          console.log('[Admin] request timed out, attempting fetch fallback');
+          const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+          const token = localStorage.getItem('token');
+          const fallbackForm = new FormData();
+          fallbackForm.append('title', articleForm.topic);
+          fallbackForm.append('content', articleForm.body);
+          fallbackForm.append('excerpt', articleForm.body.slice(0, 200));
+          fallbackForm.append('author', articleForm.author);
+          fallbackForm.append('category', articleForm.category);
+          fallbackForm.append('status', 'published');
+          if (articleForm.cover) fallbackForm.append('featuredImage', articleForm.cover);
+
+          const fetchRes = await fetch(`${apiUrl}/articles${editingId ? '/' + String(editingId) : ''}`, {
+            method: editingId ? 'PUT' : 'POST',
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: fallbackForm as unknown as BodyInit,
+          });
+          const fetchData = await fetchRes.json();
+          console.log('[Admin] fetch fallback response', fetchRes.status, fetchData);
+          if (fetchRes.ok) {
+            if (editingId) setArticles((prev) => prev.map(a => (a._id === fetchData._id || a.id === fetchData._id || a.id === editingId) ? fetchData : a));
+            else setArticles((prev) => [fetchData, ...prev]);
+            resetArticleForm();
+            setCreateOpen(false);
+            setArticleSubmitting(false);
+            return;
+          } else {
+            alert('Fallback fetch failed: ' + (fetchData?.message || fetchRes.status));
+          }
+        } catch (fetchErr) {
+          console.error('[Admin] fetch fallback error', fetchErr);
+          alert('Network error during fallback: ' + (fetchErr as any)?.message);
+        }
+      } else {
+        alert(err?.response?.data?.message || err?.message || 'Failed to save article');
+      }
+    } finally {
+      // restore state
+      setCreateStep(0);
+      setArticleSubmitting(false);
+    }
+  };
+
+  const handleEditArticle = (article: any) => {
+    setEditingId(article._id || article.id || null);
+    setArticleForm({ topic: article.title || article.topic || '', author: article.author || '', category: article.category || '', cover: null, body: article.content || article.body || '' });
+    setCreateOpen(true);
+  };
+
+  const handleDeleteArticle = async (id: number | string) => {
+    if (!confirm('Delete this article?')) return;
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/articles/${id}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error('Failed to delete article');
+      await loadArticles();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete article');
+    }
+  };
+
+  const loadArticles = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${apiUrl}/articles`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+      if (!res.ok) throw new Error('Failed to load articles');
+      const data = await res.json();
+      const list = data.articles || data || [];
+      setArticles(list);
+    } catch (err) {
+      console.error('Failed to load articles', err);
+    }
+  };
+
   // --------- Newsletters state -------------
   // Start with any saved newsletters in localStorage, but default to an empty list.
   // We'll populate this from the server when the component mounts.
@@ -166,7 +328,7 @@ export default function Admin() {
     return [];
   });
   const [saveMessage, setSaveMessage] = useState<string>("");
-  const [newsletterToDelete, setNewsletterToDelete] = useState<number | null>(null);
+  const [newsletterToDelete, setNewsletterToDelete] = useState<string | number | null>(null);
   // Fetch server newsletters on mount and update local state
   useEffect(() => {
     let mounted = true;
@@ -223,6 +385,11 @@ export default function Admin() {
       localStorage.setItem("newsletters", JSON.stringify(uploadedNewsletters));
     }
   }, [uploadedNewsletters]);
+
+  // load articles when admin is present / on mount
+  useEffect(() => {
+    if (isLoggedIn) loadArticles();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     // Fetch events on mount
@@ -671,7 +838,6 @@ export default function Admin() {
         {/* EIC Dashboard */}
         {userRole === "EIC" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* top Change Password removed per request */}
 
             {/* Editorial Management */}
             <Card className="hover:shadow-md transition-shadow">
@@ -684,21 +850,99 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Create New Article
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Edit Existing Articles
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Manage Categories
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Review Submissions
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Publish/Unpublish Articles
-                  </Button>
+                  <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => { resetArticleForm(); setCreateOpen(true); }}>
+                        <Upload className="mr-2 h-4 w-4" /> Create New Article
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>{editingId ? 'Edit Article' : 'Create New Article'}</DialogTitle>
+                        <DialogDescription>Step {createStep + 1} of 3</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        {createStep === 0 && (
+                          <div className="space-y-2">
+                            <Label>Topic</Label>
+                            <Input value={articleForm.topic} onChange={(e) => setArticleForm({ ...articleForm, topic: e.target.value })} />
+                            <Label>Author</Label>
+                            <Input value={articleForm.author} onChange={(e) => setArticleForm({ ...articleForm, author: e.target.value })} />
+                            <Label>Category</Label>
+                            <Select value={articleForm.category} onValueChange={(val) => setArticleForm({ ...articleForm, category: val })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categoriesList.map((c) => (
+                                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {createStep === 1 && (
+                          <div className="space-y-2">
+                            <Label>Cover Image (optional)</Label>
+                            <Input type="file" accept="image/*" onChange={(e) => setArticleForm({ ...articleForm, cover: e.target.files?.[0] ?? null })} />
+                            {articleForm.cover && <img src={URL.createObjectURL(articleForm.cover)} alt="preview" className="mt-2 max-h-40" />}
+                          </div>
+                        )}
+
+                        {createStep === 2 && (
+                          <div className="space-y-2">
+                            <Label>Article Body</Label>
+                            <Textarea value={articleForm.body} onChange={(e) => setArticleForm({ ...articleForm, body: e.target.value })} rows={8} />
+                          </div>
+                        )}
+                      </div>
+                      <DialogFooter>
+                        {createStep > 0 && <Button variant="outline" onClick={handleCreateBack}>Back</Button>}
+                        {createStep < 2 && <Button onClick={handleCreateNext}>{createStep === 1 ? 'Skip/Next' : 'Next'}</Button>}
+                        {createStep === 2 && (
+                          <Button onClick={async () => { console.log('[Admin] Publish button clicked'); await handleCreateSubmit(); }} disabled={articleSubmitting}>
+                            {editingId ? 'Update & Publish' : 'Publish'}
+                          </Button>
+                        )}
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => setViewOpen(true)}>
+                        <BookOpen className="mr-2 h-4 w-4" /> View / Edit Articles
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>All Articles</DialogTitle>
+                        <DialogDescription>Click edit to modify an article or delete to remove it.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-2 py-2">
+                        {articles.length === 0 ? (
+                          <p>No articles yet.</p>
+                        ) : (
+                          <ul className="space-y-2">
+                            {articles.map(a => (
+                              <li key={a.id} className="flex items-center justify-between border rounded px-3 py-2">
+                                <div>
+                                  <div className="font-medium">{a.topic}</div>
+                                  <div className="text-xs text-gray-500">{a.author} • {a.category}</div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <button title="Edit" onClick={() => { handleEditArticle(a); setViewOpen(false); }} className="text-blue-600 hover:text-blue-800"><Edit3 /></button>
+                                  <button title="Delete" onClick={() => handleDeleteArticle(a.id)} className="text-red-600 hover:text-red-800"><Trash2 /></button>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                 </div>
               </CardContent>
             </Card>

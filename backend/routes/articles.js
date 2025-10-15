@@ -12,8 +12,7 @@ const articleSchema = new mongoose.Schema({
   author: { type: String, required: true },
   category: { 
     type: String, 
-    required: true,
-    enum: ['news', 'editorial', 'opinion', 'feature', 'interview', 'review']
+    required: true
   },
   featuredImage: { type: String },
   tags: [{ type: String }],
