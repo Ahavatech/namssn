@@ -87,6 +87,11 @@ router.post('/', adminAuth, upload.single('featuredImage'), async (req, res) => 
       featuredImage: req.file ? req.file.path : null
     };
 
+    // Ensure publishDate is set when an article is created as published
+    if ((articleData.status === 'published') && !articleData.publishDate) {
+      articleData.publishDate = new Date();
+    }
+
     const article = new Article(articleData);
     await article.save();
     
@@ -112,7 +117,12 @@ router.put('/:id', adminAuth, upload.single('featuredImage'), async (req, res) =
     article.excerpt = excerpt || article.excerpt;
     article.author = author || article.author;
     article.category = category || article.category;
-    article.status = status || article.status;
+    // Detect status transition to published and set publishDate if missing
+    const incomingStatus = status || article.status;
+    if (article.status !== 'published' && incomingStatus === 'published' && !article.publishDate) {
+      article.publishDate = new Date();
+    }
+    article.status = incomingStatus || article.status;
     
     if (tags) {
       article.tags = tags.split(',').map(tag => tag.trim());

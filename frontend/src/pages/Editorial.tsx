@@ -10,35 +10,87 @@ import { Calendar, User, Search, BookOpen, TrendingUp } from 'lucide-react';
 export default function Editorial() {
   const [featuredArticles, setFeaturedArticles] = useState<any[]>([]);
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
+  const [allArticles, setAllArticles] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
 
-  const categories = [
-    { name: 'Mathematics', count: 15 },
-    { name: 'Statistics', count: 12 },
-    { name: 'Applied Math', count: 8 },
-    { name: 'Career', count: 6 },
-    { name: 'Research', count: 10 },
-    { name: 'Opinion', count: 7 }
+  // Canonical categories (kept in sync with Admin.categoriesList)
+  const categoriesList = [
+    'Mathematics',
+    'Applied Mathematics',
+    'Statistics & Data Science',
+    'Research & Innovation',
+    'Opinion & Editorials',
+    'Career & Development',
+    'Campus & Culture'
   ];
+
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    categoriesList.forEach(c => { initial[c] = 0 });
+    return initial;
+  });
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
-        const res = await fetch(`${apiUrl}/articles?status=published&limit=10`);
+        // Fetch a larger set to compute category counts reliably (server limits may apply)
+        const res = await fetch(`${apiUrl}/articles?status=published&limit=500`);
         if (!res.ok) throw new Error('Failed to fetch articles');
         const data = await res.json();
         const articles = data.articles || data || [];
         if (!mounted) return;
-        setFeaturedArticles(articles.slice(0, 3));
-        setRecentPosts(articles.slice(0, 6));
+  setAllArticles(articles);
+  setFeaturedArticles(articles.slice(0, 3));
+  setRecentPosts(articles.slice(0, 6));
+
+        // Compute category counts using canonical categoriesList
+        const counts: Record<string, number> = {};
+        categoriesList.forEach(c => counts[c] = 0);
+        articles.forEach((a: any) => {
+          // match category strings exactly to the canonical list; otherwise increment 'Other'
+          const found = categoriesList.find(c => c.toLowerCase() === (a.category || '').toLowerCase());
+          if (found) counts[found]++;
+        });
+        setCategoryCounts(counts);
       } catch (err) {
         // ignore errors, leave lists empty
       }
     })();
     return () => { mounted = false };
   }, []);
+
+  // Debounce the search query
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // Filter articles client-side when debouncedQuery changes
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setFeaturedArticles(allArticles.slice(0, 3));
+      setRecentPosts(allArticles.slice(0, 6));
+      return;
+    }
+
+    const q = debouncedQuery.toLowerCase();
+    const filtered = allArticles.filter(a => {
+      return (
+        (a.title || '').toLowerCase().includes(q) ||
+        (a.excerpt || '').toLowerCase().includes(q) ||
+        (a.content || a.body || '').toLowerCase().includes(q) ||
+        (a.author || '').toLowerCase().includes(q) ||
+        (a.category || '').toLowerCase().includes(q)
+      );
+    });
+
+    setFeaturedArticles(filtered.slice(0, 3));
+    setRecentPosts(filtered.slice(0, 6));
+  }, [debouncedQuery, allArticles]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -59,6 +111,8 @@ export default function Editorial() {
               <Input 
                 placeholder="Search articles..." 
                 className="pl-10 pr-4 py-2"
+                value={searchQuery}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
               />
             </div>
 
@@ -98,7 +152,7 @@ export default function Editorial() {
                           </div>
                           <div className="flex items-center space-x-1">
                             <Calendar className="h-4 w-4" />
-                            <span>{new Date(article.date).toLocaleDateString()}</span>
+                            <span>{new Date(article.publishDate || article.createdAt || article.date).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <Button variant="outline" size="sm">
@@ -122,11 +176,11 @@ export default function Editorial() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {categories.map((category, index) => (
+                  {categoriesList.map((category, index) => (
                     <div key={index} className="flex items-center justify-between py-2 hover:bg-gray-50 px-2 rounded cursor-pointer">
-                      <span className="text-sm font-medium">{category.name}</span>
+                      <span className="text-sm font-medium">{category}</span>
                       <Badge variant="outline" className="text-xs">
-                        {category.count}
+                        {categoryCounts[category] ?? 0}
                       </Badge>
                     </div>
                   ))}
@@ -153,7 +207,7 @@ export default function Editorial() {
                         <Badge variant="outline" className="text-xs">
                           {post.category}
                         </Badge>
-                        <span>{new Date(post.date).toLocaleDateString()}</span>
+                        <span>{new Date(post.publishDate || post.createdAt || post.date).toLocaleDateString()}</span>
                       </div>
                     </div>
                   ))}
