@@ -74,7 +74,6 @@ app.use("/api/academic-links", require("./routes/academicLinks"));
 app.use("/api/articles", require("./routes/articles"));
 app.use("/api/events", require("./routes/events"));
 app.use("/api/gallery", require("./routes/gallery"));
-app.use("/api/bookclub", require("./routes/bookclub"));
 app.use("/api/contact", require("./routes/contact"));
 app.use("/api/change-password", require("./routes/changePassword"));
 

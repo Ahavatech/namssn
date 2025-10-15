@@ -191,60 +191,6 @@ export const galleryAPI = {
   },
 };
 
-// Book Club API
-export const bookClubAPI = {
-  getCurrentBook: async () => {
-    const response = await api.get('/bookclub/current');
-    return response.data;
-  },
-  
-  updateCurrentBook: async (formData: FormData) => {
-    const response = await api.put('/bookclub/current', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-  
-  getBooks: async (params?: { status?: string }) => {
-    const response = await api.get('/bookclub/books', { params });
-    return response.data;
-  },
-  
-  addBook: async (formData: FormData) => {
-    const response = await api.post('/bookclub/books', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-  
-  updateBook: async (id: string, formData: FormData) => {
-    const response = await api.put(`/bookclub/books/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-  
-  deleteBook: async (id: string) => {
-    const response = await api.delete(`/bookclub/books/${id}`);
-    return response.data;
-  },
-  
-  getEvents: async () => {
-    const response = await api.get('/bookclub/events');
-    return response.data;
-  },
-  
-  createEvent: async (eventData: any) => {
-    const response = await api.post('/bookclub/events', eventData);
-    return response.data;
-  },
-};
 
 // Contact API
 export const contactAPI = {

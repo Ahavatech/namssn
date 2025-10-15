@@ -7,7 +7,6 @@ import About from './pages/About';
 import Academics from './pages/Academics';
 import Editorial from './pages/Editorial';
 import Contact from './pages/Contact';
-import BookClub from './pages/BookClub';
 import Events from './pages/Events';
 import Newsletter from './pages/Newsletter';
 import Admin from './pages/Admin';
@@ -26,7 +25,6 @@ const App = () => (
           <Route path="/academics" element={<Academics />} />
           <Route path="/editorial" element={<Editorial />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/bookclub" element={<BookClub />} />
           <Route path="/events" element={<Events />} />
           <Route path="/newsletter" element={<Newsletter />} />
           <Route path="/admin" element={<Admin />} />

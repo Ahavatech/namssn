@@ -41,7 +41,6 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Student Resources</h4>
             <ul className="space-y-2 text-sm">
               <li><a href="/academics" className="text-gray-300 hover:text-white transition-colors">Study Materials</a></li>
-              <li><a href="/bookclub" className="text-gray-300 hover:text-white transition-colors">Book Club</a></li>
               <li><a href="/contact" className="text-gray-300 hover:text-white transition-colors">Contact Support</a></li>
             </ul>
           </div>

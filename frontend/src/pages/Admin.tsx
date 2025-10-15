@@ -671,58 +671,7 @@ export default function Admin() {
         {/* EIC Dashboard */}
         {userRole === "EIC" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Change Password */}
-            <Card className="hover:shadow-md transition-shadow lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <Lock className="h-5 w-5 text-red-600" />
-                  <span>Change Password</span>
-                </CardTitle>
-                <CardDescription>Update your account password</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-                  <div className="space-y-2">
-                    <Label htmlFor="oldPassword">Old Password</Label>
-                    <Input
-                      id="oldPassword"
-                      type="password"
-                      value={changePwForm.oldPassword}
-                      onChange={(e) => setChangePwForm({ ...changePwForm, oldPassword: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input
-                      id="newPassword"
-                      type="password"
-                      value={changePwForm.newPassword}
-                      onChange={(e) => setChangePwForm({ ...changePwForm, newPassword: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
-                    <Input
-                      id="confirmNewPassword"
-                      type="password"
-                      value={changePwForm.confirmNewPassword}
-                      onChange={(e) => setChangePwForm({ ...changePwForm, confirmNewPassword: e.target.value })}
-                      required
-                    />
-                  </div>
-                  {pwMessage && (
-                    <Alert className="mb-2">
-                      <AlertDescription>{pwMessage}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={pwLoading}>
-                    {pwLoading ? "Changing..." : "Change Password"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            {/* top Change Password removed per request */}
 
             {/* Editorial Management */}
             <Card className="hover:shadow-md transition-shadow">
@@ -1248,24 +1197,56 @@ export default function Admin() {
               </CardContent>
             </Card>
 
-            {/* Book Club Management */}
+            {/* Change Password (replacement in small slot) */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5 text-orange-600" />
-                  <span>Book Club Management</span>
+                  <Lock className="h-5 w-5 text-red-600" />
+                  <span>Change Password</span>
                 </CardTitle>
-                <CardDescription>Manage reading lists, discussions, and club activities</CardDescription>
+                <CardDescription>Update your account password</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Update Current Reading
+                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+                  <div className="space-y-2">
+                    <Label htmlFor="oldPassword">Old Password</Label>
+                    <Input
+                      id="oldPassword"
+                      type="password"
+                      value={changePwForm.oldPassword}
+                      onChange={(e) => setChangePwForm({ ...changePwForm, oldPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={changePwForm.newPassword}
+                      onChange={(e) => setChangePwForm({ ...changePwForm, newPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmNewPassword"
+                      type="password"
+                      value={changePwForm.confirmNewPassword}
+                      onChange={(e) => setChangePwForm({ ...changePwForm, confirmNewPassword: e.target.value })}
+                      required
+                    />
+                  </div>
+                  {pwMessage && (
+                    <Alert className="mb-2">
+                      <AlertDescription>{pwMessage}</AlertDescription>
+                    </Alert>
+                  )}
+                  <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={pwLoading}>
+                    {pwLoading ? "Changing..." : "Change Password"}
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    Manage Reading List
-                  </Button>
-                </div>
+                </form>
               </CardContent>
             </Card>
           </div>

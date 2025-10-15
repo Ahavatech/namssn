@@ -13,7 +13,6 @@ const mainNavigation = [
 ];
 
 const othersDropdown = [
-  { name: 'Book Club', href: '/bookclub' },
   { name: 'Events & Gallery', href: '/events' },
   { name: 'Newsletter', href: '/newsletter' },
 ];
