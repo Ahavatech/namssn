@@ -61,12 +61,12 @@ export const newsletterAPI = {
     return response.data;
   },
   
-  delete: async (id: number) => {
+  delete: async (id: string) => {
     const response = await api.delete(`/newsletters/${id}`);
     return response.data;
   },
-  
-  getDownloadUrl: async (id: number) => {
+
+  getDownloadUrl: async (id: string) => {
     const response = await api.get(`/newsletters/${id}/download`);
     return response.data;
   },
@@ -99,7 +99,7 @@ export const articlesAPI = {
     return response.data;
   },
   
-  getById: async (id: number) => {
+  getById: async (id: string) => {
     const response = await api.get(`/articles/${id}`);
     return response.data;
   },
@@ -113,7 +113,7 @@ export const articlesAPI = {
     return response.data;
   },
   
-  update: async (id: number, formData: FormData) => {
+  update: async (id: string, formData: FormData) => {
     const response = await api.put(`/articles/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -122,7 +122,7 @@ export const articlesAPI = {
     return response.data;
   },
   
-  delete: async (id: number) => {
+  delete: async (id: string) => {
     const response = await api.delete(`/articles/${id}`);
     return response.data;
   },
@@ -149,7 +149,7 @@ export const eventsAPI = {
     return response.data;
   },
   
-  update: async (id: number, formData: FormData) => {
+  update: async (id: string, formData: FormData) => {
     const response = await api.put(`/events/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -158,7 +158,7 @@ export const eventsAPI = {
     return response.data;
   },
   
-  delete: async (id: number) => {
+  delete: async (id: string) => {
     const response = await api.delete(`/events/${id}`);
     return response.data;
   },
@@ -180,7 +180,7 @@ export const galleryAPI = {
     return response.data;
   },
   
-  delete: async (id: number) => {
+  delete: async (id: string) => {
     const response = await api.delete(`/gallery/${id}`);
     return response.data;
   },
@@ -221,7 +221,7 @@ export const bookClubAPI = {
     return response.data;
   },
   
-  updateBook: async (id: number, formData: FormData) => {
+  updateBook: async (id: string, formData: FormData) => {
     const response = await api.put(`/bookclub/books/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -230,7 +230,7 @@ export const bookClubAPI = {
     return response.data;
   },
   
-  deleteBook: async (id: number) => {
+  deleteBook: async (id: string) => {
     const response = await api.delete(`/bookclub/books/${id}`);
     return response.data;
   },
@@ -264,12 +264,12 @@ export const contactAPI = {
     return response.data;
   },
   
-  updateMessageStatus: async (id: number, status: string) => {
+  updateMessageStatus: async (id: string, status: string) => {
     const response = await api.put(`/contact/messages/${id}/status`, { status });
     return response.data;
   },
-  
-  deleteMessage: async (id: number) => {
+
+  deleteMessage: async (id: string) => {
     const response = await api.delete(`/contact/messages/${id}`);
     return response.data;
   },

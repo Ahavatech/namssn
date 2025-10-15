@@ -138,37 +138,6 @@ export default function Editorial() {
               </div>
             </div>
 
-            {/* Newsletter Archive */}
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Newsletter Archive</h2>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <BookOpen className="h-5 w-5" />
-                    <span>MATHEMA Magazine</span>
-                  </CardTitle>
-                  <CardDescription>
-                    Access our monthly publication featuring student articles, research highlights, and department news
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button variant="outline" className="justify-start">
-                      November 2024 Issue
-                    </Button>
-                    <Button variant="outline" className="justify-start">
-                      October 2024 Issue
-                    </Button>
-                    <Button variant="outline" className="justify-start">
-                      September 2024 Issue
-                    </Button>
-                    <Button variant="outline" className="justify-start">
-                      View All Archives
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </div>
 
           {/* Sidebar */}
@@ -216,21 +185,6 @@ export default function Editorial() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Call to Action */}
-            <Card className="bg-blue-50">
-              <CardHeader>
-                <CardTitle>Contribute</CardTitle>
-                <CardDescription>
-                  Share your knowledge and insights with the community
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Submit Article
-                </Button>
               </CardContent>
             </Card>
           </div>

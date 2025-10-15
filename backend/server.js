@@ -7,6 +7,21 @@ require("dotenv").config();
 
 const app = express();
 
+// Ensure required environment variables are present to avoid confusing runtime errors
+const requiredEnvs = [
+  'MONGO_URI',
+  'JWT_SECRET',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET'
+];
+const missingEnvs = requiredEnvs.filter((k) => !process.env[k]);
+if (missingEnvs.length) {
+  console.error(`Missing required environment variables: ${missingEnvs.join(', ')}`);
+  console.error('Server will exit. Please set the missing variables and restart.');
+  process.exit(1);
+}
+
 // Connect to database
 connectDB();
 
