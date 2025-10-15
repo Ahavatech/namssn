@@ -17,6 +17,63 @@ const newsletterSchema = new mongoose.Schema({
 
 const Newsletter = mongoose.model('Newsletter', newsletterSchema);
 
+// Public preview route by filename (proxy/stream the stored pdfUrl so the domain stays on the API)
+router.get('/public/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    // Find a newsletter whose pdfUrl ends with the filename
+    const newsletter = await Newsletter.findOne({ pdfUrl: { $regex: `${filename}$` } });
+    if (!newsletter) {
+      return res.status(404).json({ message: 'Newsletter not found' });
+    }
+
+    const targetUrl = newsletter.pdfUrl;
+
+    // Use global fetch (Node 18+) to stream the remote file
+    const https = require('https');
+    const url = require('url');
+    const parsed = url.parse(targetUrl);
+
+    const proxyReq = https.get(parsed, (proxyRes) => {
+      // Forward headers
+      const contentType = proxyRes.headers['content-type'] || 'application/pdf';
+      const contentLength = proxyRes.headers['content-length'];
+      res.setHeader('Content-Type', contentType);
+      if (contentLength) res.setHeader('Content-Length', contentLength);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      proxyRes.pipe(res);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error('Proxy request error:', err);
+      res.status(502).json({ message: 'Failed to fetch remote file' });
+    });
+  } catch (error) {
+    console.error('Proxy error:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Helper: convert web ReadableStream to Node.js Readable
+function streamToNodeStream(webStream) {
+  const { Readable } = require('stream');
+  const reader = webStream.getReader();
+  return new Readable({
+    async read() {
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          this.push(null);
+        } else {
+          this.push(Buffer.from(value));
+        }
+      } catch (err) {
+        this.destroy(err);
+      }
+    }
+  });
+}
+
 // Get all newsletters
 router.get('/', async (req, res) => {
   try {
