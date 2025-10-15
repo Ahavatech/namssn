@@ -68,7 +68,7 @@ type GalleryItem = {
 };
 
 type Newsletter = {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   date: string;
@@ -536,18 +536,30 @@ export default function Admin() {
   // Confirmation dialog state for newsletter delete
   // Remove duplicate declaration here, keep only the one near newsletter logic
 
-  const confirmDeleteNewsletter = (id: number) => {
+  const confirmDeleteNewsletter = (id: string | number) => {
     setNewsletterToDelete(id);
-  setNewsletterDeleteDialogOpen(true);
+    setNewsletterDeleteDialogOpen(true);
   };
 
-  const handleDeleteNewsletter = () => {
-    if (newsletterToDelete !== null) {
+  const handleDeleteNewsletter = async () => {
+    if (newsletterToDelete === null) return;
+    try {
+      // Attempt server delete
+      await fetch(`${import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api'}/newsletters/${newsletterToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : '',
+        },
+      });
+      // Remove from local state only after success
       setUploadedNewsletters((prev) => prev.filter((n) => n.id !== newsletterToDelete));
-      setSaveMessage("Newsletter deleted successfully!");
-      setTimeout(() => setSaveMessage(""), 3000);
+      setSaveMessage('Newsletter deleted successfully!');
+      setTimeout(() => setSaveMessage(''), 3000);
       setNewsletterToDelete(null);
-  setNewsletterDeleteDialogOpen(false);
+      setNewsletterDeleteDialogOpen(false);
+    } catch (err: any) {
+      setSaveMessage(err?.message || 'Failed to delete newsletter');
+      setTimeout(() => setSaveMessage(''), 3000);
     }
   };
 

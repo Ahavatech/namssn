@@ -16,6 +16,7 @@ const newsletterSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Newsletter = mongoose.model('Newsletter', newsletterSchema);
+const cloudinary = require('../config/cloudinary');
 
 // Public preview route by filename (proxy/stream the stored pdfUrl so the domain stays on the API)
 router.get('/public/:filename', async (req, res) => {
@@ -146,10 +147,35 @@ router.put('/:id', adminAuth, upload.fields([
     newsletter.status = status || newsletter.status;
     
     if (req.files.pdf) {
+      // Delete old pdf from Cloudinary if present
+      try {
+        if (newsletter.pdfUrl) {
+          const m = newsletter.pdfUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+          const publicId = m && m[1] ? m[1] : null;
+          if (publicId) {
+            // pdfs are often stored as raw resources
+            await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to delete old pdf from Cloudinary', err.message || err);
+      }
       newsletter.pdfUrl = req.files.pdf[0].path;
     }
     
     if (req.files.coverImage) {
+      // Delete old cover image if present
+      try {
+        if (newsletter.coverImage) {
+          const m2 = newsletter.coverImage.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+          const publicId2 = m2 && m2[1] ? m2[1] : null;
+          if (publicId2) {
+            await cloudinary.uploader.destroy(publicId2, { resource_type: 'image' });
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to delete old cover image from Cloudinary', err.message || err);
+      }
       newsletter.coverImage = req.files.coverImage[0].path;
     }
 
@@ -167,7 +193,26 @@ router.delete('/:id', adminAuth, async (req, res) => {
     if (!newsletter) {
       return res.status(404).json({ message: 'Newsletter not found' });
     }
-    
+    // Attempt to delete associated Cloudinary assets (pdf and coverImage)
+    try {
+      if (newsletter.pdfUrl) {
+        const m = newsletter.pdfUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+        const publicId = m && m[1] ? m[1] : null;
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+        }
+      }
+      if (newsletter.coverImage) {
+        const m2 = newsletter.coverImage.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/);
+        const publicId2 = m2 && m2[1] ? m2[1] : null;
+        if (publicId2) {
+          await cloudinary.uploader.destroy(publicId2, { resource_type: 'image' });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to remove Cloudinary assets for newsletter', err.message || err);
+    }
+
     await Newsletter.findByIdAndDelete(req.params.id);
     res.json({ message: 'Newsletter deleted successfully' });
   } catch (error) {
