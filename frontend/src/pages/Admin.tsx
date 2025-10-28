@@ -933,7 +933,7 @@ export default function Admin() {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <button title="Edit" onClick={() => { handleEditArticle(a); setViewOpen(false); }} className="text-blue-600 hover:text-blue-800"><Edit3 /></button>
-                                  <button title="Delete" onClick={() => handleDeleteArticle(a.id)} className="text-red-600 hover:text-red-800"><Trash2 /></button>
+                                  <button title="Delete" onClick={() => handleDeleteArticle(a._id)} className="text-red-600 hover:text-red-800"><Trash2 /></button>
                                 </div>
                               </li>
                             ))}
