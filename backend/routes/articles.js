@@ -178,14 +178,15 @@ router.put('/:id', adminAuth, upload.single('featuredImage'), async (req, res) =
 // Delete article (Admin only)
 router.delete('/:id', adminAuth, async (req, res) => {
   try {
+    console.log('[DELETE /articles/:id] id:', req.params.id);
     const article = await Article.findById(req.params.id);
     if (!article) {
       return res.status(404).json({ message: 'Article not found' });
     }
-    
     await Article.findByIdAndDelete(req.params.id);
     res.json({ message: 'Article deleted successfully' });
   } catch (error) {
+    console.error('[DELETE /articles/:id] error:', error);
     res.status(500).json({ message: error.message });
   }
 });
