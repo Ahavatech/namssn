@@ -74,7 +74,26 @@ router.get('/:id', async (req, res) => {
 // Create article (Admin only)
 router.post('/', adminAuth, upload.single('featuredImage'), async (req, res) => {
   try {
-    const { title, content, excerpt, author, category, tags, status } = req.body;
+          console.log('[POST /articles] req.body:', req.body);
+          if (req.file) console.log('[POST /articles] req.file:', req.file);
+          const { title, content, excerpt, author, category, tags, status } = req.body;
+          
+          // Relaxed validation: require non-empty strings for required fields
+          if (!title || typeof title !== 'string' || !title.trim()) {
+            return res.status(400).json({ message: 'Title is required' });
+          }
+          if (!content || typeof content !== 'string' || !content.trim()) {
+            return res.status(400).json({ message: 'Content is required' });
+          }
+          if (!excerpt || typeof excerpt !== 'string' || !excerpt.trim()) {
+            return res.status(400).json({ message: 'Excerpt is required' });
+          }
+          if (!author || typeof author !== 'string' || !author.trim()) {
+            return res.status(400).json({ message: 'Author is required' });
+          }
+          if (!category || typeof category !== 'string' || !category.trim()) {
+            return res.status(400).json({ message: 'Category is required' });
+          }
     
     const articleData = {
       title,
@@ -97,7 +116,8 @@ router.post('/', adminAuth, upload.single('featuredImage'), async (req, res) => 
     
     res.status(201).json(article);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+        console.error('[POST /articles] error:', error);
+        res.status(400).json({ message: error.message });
   }
 });
 
@@ -180,69 +200,6 @@ router.get('/featured/latest', async (req, res) => {
       .sort({ views: -1, publishDate: -1 })
       .limit(5);
     res.json(articles);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Get category counts (aggregation)
-// Example: GET /api/articles/counts?status=published
-router.get('/counts', async (req, res) => {
-  try {
-    const { status } = req.query;
-    const match = {};
-    if (status) match.status = status;
-
-    const stats = await Article.aggregate([
-      { $match: match },
-      { $group: { _id: { $ifNull: ['$category', 'Uncategorized'] }, count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
-
-    // Normalize response
-    res.json(stats.map(s => ({ category: s._id, count: s.count })));
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Server-side search with pagination
-// Example: GET /api/articles/search?q=term&category=Mathematics&page=1&limit=10
-router.get('/search', async (req, res) => {
-  try {
-    const { q = '', category, status, page = 1, limit = 10 } = req.query;
-    const pageNum = parseInt(page, 10) || 1;
-    const lim = Math.min(parseInt(limit, 10) || 10, 100);
-
-    const filter = {};
-    if (category) filter.category = category;
-    if (status) filter.status = status;
-    else filter.status = 'published';
-
-    if (q && String(q).trim()) {
-      const escaped = String(q).replace(/[.*+?^${}()|[\\]\\]/g, '\\\$&');
-      const regex = new RegExp(escaped, 'i');
-      filter.$or = [
-        { title: regex },
-        { excerpt: regex },
-        { content: regex },
-        { author: regex },
-        { category: regex }
-      ];
-    }
-
-    const total = await Article.countDocuments(filter);
-    const articles = await Article.find(filter)
-      .sort({ publishDate: -1 })
-      .limit(lim)
-      .skip((pageNum - 1) * lim);
-
-    res.json({
-      articles,
-      total,
-      totalPages: Math.ceil(total / lim),
-      currentPage: pageNum
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
