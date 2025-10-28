@@ -95,6 +95,23 @@ router.post('/', adminAuth, upload.single('featuredImage'), async (req, res) => 
             return res.status(400).json({ message: 'Category is required' });
           }
     
+    // Generate slug from title
+    function slugify(str) {
+      return str
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9\-]/g, '')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+    let baseSlug = slugify(title.trim());
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await Article.exists({ slug })) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+
     const articleData = {
       title,
       content,
@@ -103,7 +120,8 @@ router.post('/', adminAuth, upload.single('featuredImage'), async (req, res) => 
       category,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
       status: status || 'published',
-      featuredImage: req.file ? req.file.path : null
+      featuredImage: req.file ? req.file.path : null,
+      slug
     };
 
     // Ensure publishDate is set when an article is created as published
