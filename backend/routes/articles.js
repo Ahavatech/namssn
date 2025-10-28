@@ -185,4 +185,67 @@ router.get('/featured/latest', async (req, res) => {
   }
 });
 
+// Get category counts (aggregation)
+// Example: GET /api/articles/counts?status=published
+router.get('/counts', async (req, res) => {
+  try {
+    const { status } = req.query;
+    const match = {};
+    if (status) match.status = status;
+
+    const stats = await Article.aggregate([
+      { $match: match },
+      { $group: { _id: { $ifNull: ['$category', 'Uncategorized'] }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Normalize response
+    res.json(stats.map(s => ({ category: s._id, count: s.count })));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Server-side search with pagination
+// Example: GET /api/articles/search?q=term&category=Mathematics&page=1&limit=10
+router.get('/search', async (req, res) => {
+  try {
+    const { q = '', category, status, page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const lim = Math.min(parseInt(limit, 10) || 10, 100);
+
+    const filter = {};
+    if (category) filter.category = category;
+    if (status) filter.status = status;
+    else filter.status = 'published';
+
+    if (q && String(q).trim()) {
+      const escaped = String(q).replace(/[.*+?^${}()|[\\]\\]/g, '\\\$&');
+      const regex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { title: regex },
+        { excerpt: regex },
+        { content: regex },
+        { author: regex },
+        { category: regex }
+      ];
+    }
+
+    const total = await Article.countDocuments(filter);
+    const articles = await Article.find(filter)
+      .sort({ publishDate: -1 })
+      .limit(lim)
+      .skip((pageNum - 1) * lim);
+
+    res.json({
+      articles,
+      total,
+      totalPages: Math.ceil(total / lim),
+      currentPage: pageNum
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;
