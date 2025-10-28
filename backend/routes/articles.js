@@ -10,16 +10,14 @@ const articleSchema = new mongoose.Schema({
   content: { type: String, required: true },
   excerpt: { type: String, required: true },
   author: { type: String, required: true },
-  category: { 
-    type: String, 
-    required: true
-  },
+  category: { type: String, required: true },
   featuredImage: { type: String },
   tags: [{ type: String }],
   status: { type: String, enum: ['draft', 'published'], default: 'published' },
   publishDate: { type: Date, default: Date.now },
   views: { type: Number, default: 0 },
-  likes: { type: Number, default: 0 }
+  likes: { type: Number, default: 0 },
+  slug: { type: String, required: true, unique: true, index: true }
 }, { timestamps: true });
 
 const Article = mongoose.model('Article', articleSchema);

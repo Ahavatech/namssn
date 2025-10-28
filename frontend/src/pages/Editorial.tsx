@@ -1,5 +1,6 @@
 import Header from '@/components/Header';
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,10 @@ export default function Editorial() {
   const [allArticles, setAllArticles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // router hooks (used by effects below)
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
 
   // Canonical categories (kept in sync with Admin.categoriesList)
@@ -37,8 +42,13 @@ export default function Editorial() {
     (async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'https://namssnapi.onrender.com/api';
-        // Fetch a larger set to compute category counts reliably (server limits may apply)
-        const res = await fetch(`${apiUrl}/articles?status=published&limit=500`);
+  // Use category filter from URL if present
+  const categoryParam = searchParams.get('category');
+        const limit = 500;
+        const url = categoryParam
+          ? `${apiUrl}/articles?status=published&limit=${limit}&category=${encodeURIComponent(categoryParam)}`
+          : `${apiUrl}/articles?status=published&limit=${limit}`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch articles');
         const data = await res.json();
         const articles = data.articles || data || [];
@@ -61,7 +71,8 @@ export default function Editorial() {
       }
     })();
     return () => { mounted = false };
-  }, []);
+  }, [searchParams]);
+
 
   // Debounce the search query
   useEffect(() => {
@@ -136,7 +147,7 @@ export default function Editorial() {
                         <Badge variant="secondary">{article.category}</Badge>
                         <span className="text-sm text-gray-500">{article.readTime}</span>
                       </div>
-                      <CardTitle className="text-xl hover:text-blue-600 cursor-pointer">
+                      <CardTitle className="text-xl hover:text-blue-600 cursor-pointer" onClick={() => navigate(`/editorial/${article._id || article.id}`)}>
                         {article.title}
                       </CardTitle>
                       <CardDescription className="text-base">
@@ -155,7 +166,7 @@ export default function Editorial() {
                             <span>{new Date(article.publishDate || article.createdAt || article.date).toLocaleDateString()}</span>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/editorial/${article._id || article.id}`)}>
                           Read More
                         </Button>
                       </div>
@@ -177,7 +188,7 @@ export default function Editorial() {
               <CardContent>
                 <div className="space-y-2">
                   {categoriesList.map((category, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 hover:bg-gray-50 px-2 rounded cursor-pointer">
+                    <div key={index} onClick={() => { setSearchQuery(''); setSearchParams({ category }); }} className="flex items-center justify-between py-2 hover:bg-gray-50 px-2 rounded cursor-pointer">
                       <span className="text-sm font-medium">{category}</span>
                       <Badge variant="outline" className="text-xs">
                         {categoryCounts[category] ?? 0}

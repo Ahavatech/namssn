@@ -34,6 +34,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://namssn.onrender.com",
   "https://namssnapi.onrender.com",
+  "https://namssn.oauife.edu.ng",
   "https://namssn-frontend.onrender.com",
 ];
 
