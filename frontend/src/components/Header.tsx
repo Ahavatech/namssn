@@ -37,8 +37,8 @@ export default function Header() {
             </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
+          {/* Desktop Navigation (Large Screens) */}
+          <nav className="hidden lg:flex items-center space-x-1">
             {mainNavigation.map((item) => (
               <a
                 key={item.name}
@@ -49,6 +49,30 @@ export default function Header() {
               </a>
             ))}
           </nav>
+
+          {/* Tablet Navigation (Medium Screens) */}
+          <div className="hidden md:block lg:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  Menu
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {mainNavigation.map((item) => (
+                  <DropdownMenuItem key={item.name}>
+                    <a
+                      href={item.href}
+                      className="w-full text-sm font-medium text-gray-700 hover:text-blue-600"
+                    >
+                      {item.name}
+                    </a>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Mobile Navigation */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
