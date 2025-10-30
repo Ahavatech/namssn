@@ -29,7 +29,6 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm">
               <li><a href="/about" className="text-gray-300 hover:text-white transition-colors">About Us</a></li>
-              <li><a href="/academics" className="text-gray-300 hover:text-white transition-colors">Academic Resources</a></li>
               <li><a href="/editorial" className="text-gray-300 hover:text-white transition-colors">Editorial</a></li>
               <li><a href="/events" className="text-gray-300 hover:text-white transition-colors">Events & Gallery</a></li>
               <li><a href="/newsletter" className="text-gray-300 hover:text-white transition-colors">Newsletter</a></li>
@@ -40,7 +39,7 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4">Student Resources</h4>
             <ul className="space-y-2 text-sm">
-              <li><a href="/academics" className="text-gray-300 hover:text-white transition-colors">Study Materials</a></li>
+              <li><a href="/academics" className="text-gray-300 hover:text-white transition-colors">Academic Resources</a></li>
               <li><a href="/contact" className="text-gray-300 hover:text-white transition-colors">Contact Support</a></li>
             </ul>
           </div>
@@ -107,11 +106,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-300">
-            <p>&copy; 2024 NAMSSN OAU Chapter. All rights reserved.</p>
-            <div className="mt-2 md:mt-0 space-x-4">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            </div>
+            <p>&copy; 2025 NAMSSN OAU Chapter. All rights reserved.</p>
           </div>
         </div>
       </div>
