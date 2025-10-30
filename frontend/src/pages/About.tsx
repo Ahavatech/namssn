@@ -15,7 +15,7 @@ export default function About() {
     { name: 'Osuolale Anuoluwapo', position: 'Academic Director', phone: '08050230712', image: 'academic_dir.jpg' },
     { name: 'Adekunle Ibukunoluwa A.', position: 'Editor in Chief', phone: '08142717108', image: 'eic.jpg' },
     { name: 'Akintunde Oluwafisayomi', position: 'Treasurer', phone: '07025138913', image: 'treasurer.jpg' },
-    { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453', image: 'ass_lib.jpg' },
+    { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453', image: 'lib.jpg' },
     { name: 'EMMANUEL ISAAC V.', position: 'Financial Secretary', phone: '08166786346', image: 'fin_sec.jpg' },
     { name: 'Idowu Esther', position: 'Assistant Librarian', phone: '08104397406', image: 'ass_lib.jpg' },
     { name: 'Adesoye Qodir A.', position: 'Director Social', phone: '07016560860', image: 'dir_social.jpg' },
@@ -152,7 +152,14 @@ export default function About() {
                     </Badge>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 text-sm text-center font-semibold">{exec.phone}</p>
+                    <a 
+                      href={`https://wa.me/234${exec.phone.replace(/^0/, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-700 text-sm text-center font-semibold block transition-colors"
+                    >
+                      {exec.phone}
+                    </a>
                   </CardContent>
                 </Card>
               ))}
