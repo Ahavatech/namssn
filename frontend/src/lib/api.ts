@@ -72,13 +72,25 @@ export const newsletterAPI = {
   },
 };
 
-// Academic API
+// Academic API types
+type AcademicPart = {
+  part1: string;
+  part2: string;
+  part3: string;
+  part4: string;
+};
+
+type AcademicLinks = {
+  mathematics: AcademicPart;
+  statistics: AcademicPart;
+};
+
 export const academicAPI = {
-  getLinks: async () => {
+  getLinks: async (): Promise<AcademicLinks> => {
     const response = await api.get('/academic-links');
     return response.data;
   },
-  updateLinks: async (links: Record<string, string>) => {
+  updateLinks: async (links: AcademicLinks) => {
     const response = await api.put('/academic-links', links);
     return response.data;
   },

@@ -358,10 +358,18 @@ export default function Admin() {
 
   // --------- Drive links (Librarian) -------
   const [driveLinks, setDriveLinks] = useState({
-    part1: "",
-    part2: "",
-    part3: "",
-    part4: "",
+    mathematics: {
+      part1: "",
+      part2: "",
+      part3: "",
+      part4: ""
+    },
+    statistics: {
+      part1: "",
+      part2: "",
+      part3: "",
+      part4: ""
+    }
   });
 
   // ---------- Effects ----------
@@ -387,6 +395,40 @@ export default function Admin() {
   }, [uploadedNewsletters]);
 
   // load articles when admin is present / on mount
+  // Load drive links on mount if user is librarian
+  useEffect(() => {
+    const loadDriveLinks = async () => {
+      if (userRole === "Librarian") {
+        try {
+          const data = await academicAPI.getLinks();
+          setDriveLinks({
+            mathematics: {
+              part1: data.mathematics?.part1 || '',
+              part2: data.mathematics?.part2 || '',
+              part3: data.mathematics?.part3 || '',
+              part4: data.mathematics?.part4 || ''
+            },
+            statistics: {
+              part1: data.statistics?.part1 || '',
+              part2: data.statistics?.part2 || '',
+              part3: data.statistics?.part3 || '',
+              part4: data.statistics?.part4 || ''
+            }
+          });
+        } catch (err) {
+          // Try to load from localStorage as fallback
+          const savedLinks = localStorage.getItem("driveLinks");
+          if (savedLinks) {
+            try {
+              setDriveLinks(JSON.parse(savedLinks));
+            } catch {}
+          }
+        }
+      }
+    };
+    loadDriveLinks();
+  }, [userRole]);
+
   useEffect(() => {
     if (isLoggedIn) loadArticles();
   }, [isLoggedIn]);
@@ -730,10 +772,19 @@ export default function Admin() {
     }
   };
 
-  const handleSaveLinks = () => {
-    setSaveMessage("Drive links updated successfully!");
-    localStorage.setItem("driveLinks", JSON.stringify(driveLinks));
-    setTimeout(() => setSaveMessage(""), 3000);
+  const handleSaveLinks = async () => {
+    try {
+      // Save to backend
+      await academicAPI.updateLinks(driveLinks);
+      // Save to local storage
+      localStorage.setItem("driveLinks", JSON.stringify(driveLinks));
+      // Show success message
+      setSaveMessage("Drive links updated successfully!");
+      setTimeout(() => setSaveMessage(""), 3000);
+    } catch (err) {
+      setSaveMessage("Failed to update drive links. Please try again.");
+      setTimeout(() => setSaveMessage(""), 5000);
+    }
   };
 
   // ---------- Render ----------
@@ -1553,113 +1604,256 @@ export default function Admin() {
 
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Google Drive Links Management</h2>
-              <p className="text-gray-600">Update Google Drive folder links for each academic part</p>
+              <p className="text-gray-600">Update Google Drive folder links for mathematics and statistics resources</p>
+              {saveMessage && (
+                <Alert className="mt-4">
+                  <AlertDescription>{saveMessage}</AlertDescription>
+                </Alert>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FolderOpen className="h-5 w-5 text-blue-600" />
-                    <span>Part 1 Resources</span>
-                  </CardTitle>
-                  <CardDescription>100 Level courses and materials</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="part1-link">Google Drive Folder Link</Label>
-                    <Input
-                      id="part1-link"
-                      type="url"
-                      value={driveLinks.part1}
-                      onChange={(e) => setDriveLinks({ ...driveLinks, part1: e.target.value })}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                    />
-                  </div>
-                  <Button type="button" onClick={handleSaveLinks} className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
-                    <Save className="mr-2 h-4 w-4" />
-                    Update Part 1 Link
-                  </Button>
-                </CardContent>
-              </Card>
+            {/* Mathematics Section */}
+            <div className="mb-12">
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Mathematics Resources</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-blue-600" />
+                      <span>Mathematics Part 1</span>
+                    </CardTitle>
+                    <CardDescription>100 Level mathematics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="math-part1-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="math-part1-link"
+                        type="url"
+                        value={driveLinks.mathematics.part1}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          mathematics: { ...driveLinks.mathematics, part1: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Mathematics Part 1
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FolderOpen className="h-5 w-5 text-green-600" />
-                    <span>Part 2 Resources</span>
-                  </CardTitle>
-                  <CardDescription>200 Level courses and materials</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="part2-link">Google Drive Folder Link</Label>
-                    <Input
-                      id="part2-link"
-                      type="url"
-                      value={driveLinks.part2}
-                      onChange={(e) => setDriveLinks({ ...driveLinks, part2: e.target.value })}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                    />
-                  </div>
-                  <Button type="button" onClick={handleSaveLinks} className="w-full bg-green-600 hover:bg-green-700" size="sm">
-                    <Save className="mr-2 h-4 w-4" />
-                    Update Part 2 Link
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-green-600" />
+                      <span>Mathematics Part 2</span>
+                    </CardTitle>
+                    <CardDescription>200 Level mathematics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="math-part2-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="math-part2-link"
+                        type="url"
+                        value={driveLinks.mathematics.part2}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          mathematics: { ...driveLinks.mathematics, part2: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Mathematics Part 2
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FolderOpen className="h-5 w-5 text-purple-600" />
-                    <span>Part 3 Resources</span>
-                  </CardTitle>
-                  <CardDescription>300 Level courses and materials</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="part3-link">Google Drive Folder Link</Label>
-                    <Input
-                      id="part3-link"
-                      type="url"
-                      value={driveLinks.part3}
-                      onChange={(e) => setDriveLinks({ ...driveLinks, part3: e.target.value })}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                    />
-                  </div>
-                  <Button type="button" onClick={handleSaveLinks} className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
-                    <Save className="mr-2 h-4 w-4" />
-                    Update Part 3 Link
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-purple-600" />
+                      <span>Mathematics Part 3</span>
+                    </CardTitle>
+                    <CardDescription>300 Level mathematics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="math-part3-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="math-part3-link"
+                        type="url"
+                        value={driveLinks.mathematics.part3}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          mathematics: { ...driveLinks.mathematics, part3: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Mathematics Part 3
+                    </Button>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FolderOpen className="h-5 w-5 text-orange-600" />
-                    <span>Part 4 Resources</span>
-                  </CardTitle>
-                  <CardDescription>400 Level courses and materials</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="part4-link">Google Drive Folder Link</Label>
-                    <Input
-                      id="part4-link"
-                      type="url"
-                      value={driveLinks.part4}
-                      onChange={(e) => setDriveLinks({ ...driveLinks, part4: e.target.value })}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                    />
-                  </div>
-                  <Button type="button" onClick={handleSaveLinks} className="w-full bg-orange-600 hover:bg-orange-700" size="sm">
-                    <Save className="mr-2 h-4 w-4" />
-                    Update Part 4 Link
-                  </Button>
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-orange-600" />
+                      <span>Mathematics Part 4</span>
+                    </CardTitle>
+                    <CardDescription>400 Level mathematics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="math-part4-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="math-part4-link"
+                        type="url"
+                        value={driveLinks.mathematics.part4}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          mathematics: { ...driveLinks.mathematics, part4: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-orange-600 hover:bg-orange-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Mathematics Part 4
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Statistics Section */}
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 mb-6">Statistics Resources</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-blue-600" />
+                      <span>Statistics Part 1</span>
+                    </CardTitle>
+                    <CardDescription>100 Level statistics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stats-part1-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="stats-part1-link"
+                        type="url"
+                        value={driveLinks.statistics.part1}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          statistics: { ...driveLinks.statistics, part1: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-blue-600 hover:bg-blue-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Statistics Part 1
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-green-600" />
+                      <span>Statistics Part 2</span>
+                    </CardTitle>
+                    <CardDescription>200 Level statistics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stats-part2-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="stats-part2-link"
+                        type="url"
+                        value={driveLinks.statistics.part2}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          statistics: { ...driveLinks.statistics, part2: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Statistics Part 2
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-purple-600" />
+                      <span>Statistics Part 3</span>
+                    </CardTitle>
+                    <CardDescription>300 Level statistics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stats-part3-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="stats-part3-link"
+                        type="url"
+                        value={driveLinks.statistics.part3}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          statistics: { ...driveLinks.statistics, part3: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-purple-600 hover:bg-purple-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Statistics Part 3
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FolderOpen className="h-5 w-5 text-orange-600" />
+                      <span>Statistics Part 4</span>
+                    </CardTitle>
+                    <CardDescription>400 Level statistics courses and materials</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stats-part4-link">Google Drive Folder Link</Label>
+                      <Input
+                        id="stats-part4-link"
+                        type="url"
+                        value={driveLinks.statistics.part4}
+                        onChange={(e) => setDriveLinks({
+                          ...driveLinks,
+                          statistics: { ...driveLinks.statistics, part4: e.target.value }
+                        })}
+                        placeholder="https://drive.google.com/drive/folders/..."
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSaveLinks} className="w-full bg-orange-600 hover:bg-orange-700" size="sm">
+                      <Save className="mr-2 h-4 w-4" />
+                      Update Statistics Part 4
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         )}
