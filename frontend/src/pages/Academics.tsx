@@ -152,6 +152,7 @@ export default function Academics() {
                 ))}
               </div>
             </div>
+          </div>
         </div>
       </section>
 

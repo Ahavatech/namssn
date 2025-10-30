@@ -2,22 +2,24 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Target, Eye, Heart } from 'lucide-react';
+import { Target, Eye, Heart } from 'lucide-react';
+import { useState } from 'react';
 
 export default function About() {
+  const [imageLoadError, setImageLoadError] = useState<Record<string, boolean>>({});
   const executives = [
-    { name: 'Jacobs Odunayo M.', position: 'President', phone: '09052029197' },
-    { name: 'Qazeem Anuoluwapo M.', position: 'Vice President', phone: '07089225441' },
-    { name: 'Adeyemi Adesewa', position: 'General Secretary', phone: '09138904056' },
-    { name: 'Adetola Emmanuel', position: 'Assistant General Secretary', phone: '08081995085' },
-    { name: 'Osuolale Anuoluwapo', position: 'Academic Director', phone: '08050230712' },
-    { name: 'Adekunle Ibukunoluwa A.', position: 'Editor in Chief', phone: '08142717108' },
-    { name: 'Akintunde Oluwafisayomi', position: 'Treasurer', phone: '07025138913' },
-    { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453' },
-    { name: 'EMMANUEL ISAAC V.', position: 'Financial Secretary', phone: '08166786346' },
-    { name: 'Idowu Esther', position: 'Assistant Librarian', phone: '08104397406' },
-    { name: 'Adesoye Qodir A.', position: 'Director Social', phone: '07016560860' },
-    { name: 'Oyekanmi Titiloye', position: 'PRO', phone: '07067846902' },
+    { name: 'Jacobs Odunayo M.', position: 'President', phone: '09052029197', image: 'president.jpg' },
+    { name: 'Qazeem Anuoluwapo M.', position: 'Vice President', phone: '07089225441', image: 'vice_president.jpg' },
+    { name: 'Adeyemi Adesewa', position: 'General Secretary', phone: '09138904056', image: 'gen_sec.jpg' },
+    { name: 'Adetola Emmanuel', position: 'Assistant General Secretary', phone: '08081995085', image: 'ass_gen_sec.jpg' },
+    { name: 'Osuolale Anuoluwapo', position: 'Academic Director', phone: '08050230712', image: 'academic_dir.jpg' },
+    { name: 'Adekunle Ibukunoluwa A.', position: 'Editor in Chief', phone: '08142717108', image: 'eic.jpg' },
+    { name: 'Akintunde Oluwafisayomi', position: 'Treasurer', phone: '07025138913', image: 'treasurer.jpg' },
+    { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453', image: 'ass_lib.jpg' },
+    { name: 'EMMANUEL ISAAC V.', position: 'Financial Secretary', phone: '08166786346', image: 'fin_sec.jpg' },
+    { name: 'Idowu Esther', position: 'Assistant Librarian', phone: '08104397406', image: 'ass_lib.jpg' },
+    { name: 'Adesoye Qodir A.', position: 'Director Social', phone: '07016560860', image: 'dir_social.jpg' },
+    { name: 'Oyekanmi Titiloye', position: 'PRO', phone: '07067846902', image: 'pro.jpg' },
   ];
 
   return (
@@ -133,8 +135,16 @@ export default function About() {
               {executives.map((exec, index) => (
                 <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                   <CardHeader className="text-center">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="h-10 w-10 text-blue-600" />
+                    <div className="w-24 h-24 mx-auto mb-4 overflow-hidden rounded-full border-2 border-blue-200">
+                      <img 
+                        src={imageLoadError[exec.name] ? '/assets/namssn-logo.png' : `/assets/executives/${exec.image}`}
+                        alt={exec.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={() => {
+                          setImageLoadError(prev => ({ ...prev, [exec.name]: true }));
+                        }}
+                      />
                     </div>
                     <CardTitle className="text-lg">{exec.name}</CardTitle>
                     <Badge variant="secondary" className="mx-auto">
