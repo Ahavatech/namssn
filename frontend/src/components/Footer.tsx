@@ -1,4 +1,4 @@
-import { Facebook, Twitter, Mail, MapPin, Phone } from 'lucide-react';
+import { Facebook, Twitter, Mail, MapPin, Phone, Instagram } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -59,11 +59,9 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-gray-300" />
-                <span className="text-gray-300">namssn@oauife.edu.ng</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-gray-300" />
-                <span className="text-gray-300">+234 XXX XXX XXXX</span>
+                <a href="mailto:namssnoau@gmail.com" className="text-gray-300 hover:text-white transition-colors">
+                  namssnoau@gmail.com
+                </a>
               </div>
             </div>
 
@@ -72,12 +70,20 @@ export default function Footer() {
               <h5 className="text-sm font-semibold mb-3">Follow Us</h5>
               <div className="flex space-x-3">
                 <a 
-                  href="https://facebook.com/namssnoau" 
+                  href="https://www.facebook.com/share/1BuboSdSCg/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="bg-gray-800 hover:bg-blue-600 p-2 rounded-full transition-colors"
                 >
                   <Facebook className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://instagram.com/namssnoau" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-gray-800 hover:bg-pink-600 p-2 rounded-full transition-colors"
+                >
+                  <Instagram className="h-4 w-4" />
                 </a>
                 <a 
                   href="https://x.com/namssnoau" 
@@ -88,7 +94,7 @@ export default function Footer() {
                   <Twitter className="h-4 w-4" />
                 </a>
                 <a 
-                  href="mailto:namssn@oauife.edu.ng"
+                  href="mailto:namssnoau@gmail.com"
                   className="bg-gray-800 hover:bg-red-600 p-2 rounded-full transition-colors"
                 >
                   <Mail className="h-4 w-4" />

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { MapPin, Phone, Mail, Instagram, Linkedin, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, Instagram, Twitter, Facebook } from 'lucide-react';
 
 export default function Contact() {
   return (
@@ -88,14 +88,11 @@ export default function Contact() {
                     <Mail className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="font-medium">Email</p>
-                      <p className="text-sm text-gray-600">namssn@oauife.edu.ng</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Phone className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <p className="font-medium">Phone</p>
-                      <p className="text-sm text-gray-600">+234 XXX XXX XXXX</p>
+                      <p className="text-sm text-gray-600">
+                        <a href="mailto:namssnoau@gmail.com" className="hover:text-blue-600 transition-colors">
+                          namssnoau@gmail.com
+                        </a>
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -111,15 +108,26 @@ export default function Contact() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex space-x-4">
-                    <Button variant="outline" size="icon">
-                      <Instagram className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Linkedin className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
+                    <a href="https://www.facebook.com/share/1BuboSdSCg/" target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="icon" className="hover:bg-blue-100">
+                        <Facebook className="h-4 w-4" />
+                      </Button>
+                    </a>
+                    <a href="https://instagram.com/namssnoau" target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="icon" className="hover:bg-pink-100">
+                        <Instagram className="h-4 w-4" />
+                      </Button>
+                    </a>
+                    <a href="https://x.com/namssnoau" target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="icon" className="hover:bg-gray-100">
+                        <Twitter className="h-4 w-4" />
+                      </Button>
+                    </a>
+                    <a href="mailto:namssnoau@gmail.com">
+                      <Button variant="outline" size="icon" className="hover:bg-red-100">
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    </a>
                   </div>
                 </CardContent>
               </Card>
