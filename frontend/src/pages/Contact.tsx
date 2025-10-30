@@ -123,11 +123,9 @@ export default function Contact() {
                 <CardContent>
                   <div className="rounded-lg overflow-hidden h-80">
                     <iframe
-                      title="Department of Mathematics, OAU"
-                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3956.1354848783467!2d4.528864974085091!3d7.524432611381965!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x10478fd08a745699%3A0x3a6a46d2f20dbf62!2sDepartment%20of%20Mathematics%2C%20OAU!5e0!3m2!1sen!2sng!4v1730308700000!5m2!1sen!2sng"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3946.429299979518!2d4.519021674927883!3d7.517514611028918!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103830a0bce7e3bb%3A0x414b4a3a6867e37f!2sDepartment%20of%20Mathematics%2C%20OAU!5e0!3m2!1sen!2sng!4v1730300832344!5m2!1sen!2sng"
                       width="100%"
                       height="100%"
-                      style={{ border: 0 }}
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"

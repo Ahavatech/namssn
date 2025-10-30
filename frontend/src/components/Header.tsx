@@ -9,12 +9,9 @@ const mainNavigation = [
   { name: 'About Us', href: '/about' },
   { name: 'Academics', href: '/academics' },
   { name: 'Editorial', href: '/editorial' },
-  { name: 'Contact Us', href: '/contact' },
-];
-
-const othersDropdown = [
   { name: 'Events & Gallery', href: '/events' },
   { name: 'Newsletter', href: '/newsletter' },
+  { name: 'Contact Us', href: '/contact' },
 ];
 
 export default function Header() {
@@ -51,25 +48,6 @@ export default function Header() {
                 {item.name}
               </a>
             ))}
-            
-            {/* Others Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50">
-                  Others
-                  <ChevronDown className="ml-1 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                {othersDropdown.map((item) => (
-                  <DropdownMenuItem key={item.name} asChild>
-                    <a href={item.href} className="w-full">
-                      {item.name}
-                    </a>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </nav>
 
           {/* Mobile Navigation */}
@@ -97,19 +75,6 @@ export default function Header() {
                     {item.name}
                   </a>
                 ))}
-                <div className="border-t pt-2 mt-2">
-                  <p className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Others</p>
-                  {othersDropdown.map((item) => (
-                    <a
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md transition-colors"
-                    >
-                      {item.name}
-                    </a>
-                  ))}
-                </div>
               </nav>
             </SheetContent>
           </Sheet>
