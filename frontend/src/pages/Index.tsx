@@ -98,7 +98,7 @@ export default function Index() {
             </div>
             <div className="mb-8">
               <p className="text-xl text-blue-600 font-semibold mb-4">
-                "Excellence in Mathematical Sciences Education"
+                "Critical Thinkers"
               </p>
               <p className="text-lg text-gray-700 max-w-2xl mx-auto">
                 Welcome to the official online hub for NAMSSN OAU Chapter. 
