@@ -88,6 +88,16 @@ router.post('/', adminAuth, (req, res) => {
       console.error('Gallery upload middleware error:', err);
       return res.status(400).json({ message: err.message || 'File upload failed' });
     }
+    // Diagnostic log: show incoming form fields and file info
+    try {
+      console.log('Gallery POST incoming', {
+        fields: req.body,
+        filesCount: Array.isArray(req.files) ? req.files.length : 0,
+        fileFields: Array.isArray(req.files) ? req.files.map(f => f.fieldname) : [],
+      });
+    } catch (e) {
+      console.error('Error logging gallery POST request:', e);
+    }
 
     try {
       const { title, description, type, category, eventId, tags, featured } = req.body;
@@ -154,6 +164,17 @@ router.put('/:id', adminAuth, (req, res) => {
     if (err) {
       console.error('Gallery upload middleware error (PUT):', err);
       return res.status(400).json({ message: err.message || 'File upload failed' });
+    }
+    // Diagnostic log
+    try {
+      console.log('Gallery PUT incoming', {
+        id: req.params.id,
+        fields: req.body,
+        filesCount: Array.isArray(req.files) ? req.files.length : 0,
+        fileFields: Array.isArray(req.files) ? req.files.map(f => f.fieldname) : [],
+      });
+    } catch (e) {
+      console.error('Error logging gallery PUT request:', e);
     }
 
     try {
@@ -252,6 +273,17 @@ router.post('/bulk/:eventId', adminAuth, (req, res) => {
     if (err) {
       console.error('Gallery upload middleware error (BULK):', err);
       return res.status(400).json({ message: err.message || 'File upload failed' });
+    }
+    // Diagnostic log
+    try {
+      console.log('Gallery BULK incoming', {
+        params: req.params,
+        fields: req.body,
+        filesCount: Array.isArray(req.files) ? req.files.length : 0,
+        fileFields: Array.isArray(req.files) ? req.files.map(f => f.fieldname) : [],
+      });
+    } catch (e) {
+      console.error('Error logging gallery BULK request:', e);
     }
 
     try {
