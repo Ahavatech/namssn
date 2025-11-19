@@ -53,13 +53,18 @@ export default function Events() {
   const [carouselOpen, setCarouselOpen] = useState(false);
   const [carouselImages, setCarouselImages] = useState<any[]>([]);
   const [carouselTitle, setCarouselTitle] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
   // Fetch gallery for past events
   useEffect(() => {
     async function fetchGallery() {
       if (!events || events.length === 0) return;
-      const today = '2025-10-06';
-      const pastEvents = events.filter(ev => (ev.date && ev.date < today) || ev.status === 'completed');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const pastEvents = events.filter(ev => {
+        const d = ev.date ? new Date(ev.date) : null;
+        return (d && d < today) || ev.status === 'completed';
+      });
       const galleryMap: Record<string, any[]> = {};
 
       for (const ev of pastEvents) {
@@ -123,8 +128,10 @@ export default function Events() {
             ) : (
               events
                 .filter(ev => {
-                  const today = '2025-10-06';
-                  return ev.date && ev.date >= today && ev.status !== 'completed';
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const d = ev.date ? new Date(ev.date) : null;
+                  return (d && d >= today && ev.status !== 'completed');
                 })
                 .map(event => (
                   <Card key={event._id || event.id} className="hover:shadow-lg transition-shadow">
@@ -147,7 +154,29 @@ export default function Events() {
                           <CardTitle className="text-xl">{event.title}</CardTitle>
                           <CardDescription className="text-base mt-2">{event.description}</CardDescription>
                         </div>
-                        <Button className="bg-blue-600 hover:bg-blue-700">Register Now</Button>
+                        <Button
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={async () => {
+                            // open modal with full description and images
+                            setSelectedEvent(event);
+                            setCarouselTitle(event.title);
+                            // build images: featuredImage first, then gallery items
+                            const images: any[] = [];
+                            if (event.featuredImage) images.push({ url: event.featuredImage, title: 'Event Flyer' });
+                            try {
+                              const res = (await window.galleryAPI?.getAll?.({ eventId: event._id || event.id })) ||
+                                (await import('@/lib/api').then(m => m.galleryAPI.getAll({ eventId: event._id || event.id })));
+                              const items = res.items || res.data || [];
+                              const imgs = items.filter((i: any) => i.type === 'image').map((i: any) => ({ url: i.url || i.path || i.thumbnail || i.imageUrl, title: i.title || '' }));
+                              setCarouselImages([...images, ...imgs]);
+                            } catch {
+                              setCarouselImages(images);
+                            }
+                            setCarouselOpen(true);
+                          }}
+                        >
+                          See More
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -185,8 +214,10 @@ export default function Events() {
             ) : (
               events
                 .filter(ev => {
-                  const today = '2025-10-06';
-                  return (ev.date && ev.date < today) || ev.status === 'completed';
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const d = ev.date ? new Date(ev.date) : null;
+                  return (d && d < today) || ev.status === 'completed';
                 })
                 .map(event => (
                   <Card
@@ -238,7 +269,8 @@ export default function Events() {
             >
               &times;
             </button>
-            <h3 className="text-xl font-bold mb-4 text-center">{carouselTitle} - Gallery</h3>
+            <h3 className="text-xl font-bold mb-2 text-center">{carouselTitle}</h3>
+            {selectedEvent && <p className="text-sm text-gray-700 mb-4">{selectedEvent.description}</p>}
             {carouselImages.length === 0 ? (
               <p className="text-center text-gray-500">No images uploaded for this event.</p>
             ) : (

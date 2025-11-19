@@ -92,22 +92,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create event (Admin only)
-router.post('/', adminAuth, upload.fields([
-  { name: 'featuredImage', maxCount: 1 },
-  { name: 'image', maxCount: 1 },
-  { name: 'gallery', maxCount: 10 },
-  { name: 'images', maxCount: 10 }
-]), async (req, res) => {
+router.post('/', adminAuth, upload.any(), async (req, res) => {
   try {
     const { 
       title, description, date, time, location, category, organizer,
       registrationRequired, registrationLink, maxAttendees, tags
     } = req.body;
     
+    // determine featuredImage and gallery paths from any uploaded files
+    let featuredImagePath = null;
+    const galleryPaths = [];
+    if (Array.isArray(req.files)) {
+      for (const f of req.files) {
+        if (!featuredImagePath && (f.fieldname === 'featuredImage' || f.fieldname === 'image')) {
+          featuredImagePath = f.path;
+        } else if (f.fieldname === 'gallery' || f.fieldname === 'images') {
+          galleryPaths.push(f.path);
+        } else {
+          // fallback: treat unknown file fields as gallery entries
+          galleryPaths.push(f.path);
+        }
+      }
+    }
+
+    // set status based on date (past dates -> completed)
+    const eventDate = new Date(date);
+    const now = new Date();
+    const computedStatus = eventDate < now ? 'completed' : 'upcoming';
+
     const eventData = {
       title,
       description,
-      date: new Date(date),
+      date: eventDate,
       time,
       location,
       category,
@@ -116,8 +132,9 @@ router.post('/', adminAuth, upload.fields([
       registrationLink,
       maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-      featuredImage: (req.files.featuredImage && req.files.featuredImage[0]) ? req.files.featuredImage[0].path : (req.files.image && req.files.image[0]) ? req.files.image[0].path : null,
-      gallery: (req.files.gallery ? req.files.gallery : req.files.images ? req.files.images : []).map(file => file.path)
+      featuredImage: featuredImagePath,
+      gallery: galleryPaths,
+      status: computedStatus
     };
 
     const event = new Event(eventData);
@@ -130,12 +147,7 @@ router.post('/', adminAuth, upload.fields([
 });
 
 // Update event (Admin only)
-router.put('/:id', adminAuth, upload.fields([
-  { name: 'featuredImage', maxCount: 1 },
-  { name: 'image', maxCount: 1 },
-  { name: 'gallery', maxCount: 10 },
-  { name: 'images', maxCount: 10 }
-]), async (req, res) => {
+router.put('/:id', adminAuth, upload.any(), async (req, res) => {
   try {
     const { 
       title, description, date, time, location, category, organizer,
@@ -168,16 +180,30 @@ router.put('/:id', adminAuth, upload.fields([
       event.tags = tags.split(',').map(tag => tag.trim());
     }
     
-    // accept alternative field names for uploaded files
-    if (req.files.featuredImage && req.files.featuredImage[0]) {
-      event.featuredImage = req.files.featuredImage[0].path;
-    } else if (req.files.image && req.files.image[0]) {
-      event.featuredImage = req.files.image[0].path;
+    // process any uploaded files
+    let featuredImagePath = null;
+    const galleryPaths = [];
+    if (Array.isArray(req.files)) {
+      for (const f of req.files) {
+        if (!featuredImagePath && (f.fieldname === 'featuredImage' || f.fieldname === 'image')) {
+          featuredImagePath = f.path;
+        } else if (f.fieldname === 'gallery' || f.fieldname === 'images') {
+          galleryPaths.push(f.path);
+        } else {
+          // fallback: treat unknown file fields as gallery entries
+          galleryPaths.push(f.path);
+        }
+      }
     }
 
-    const galleryFiles = req.files.gallery ? req.files.gallery : (req.files.images ? req.files.images : []);
-    if (galleryFiles && galleryFiles.length > 0) {
-      event.gallery = [...event.gallery, ...galleryFiles.map(file => file.path)];
+    if (featuredImagePath) event.featuredImage = featuredImagePath;
+    if (galleryPaths.length > 0) event.gallery = [...event.gallery, ...galleryPaths];
+
+    // recompute status based on updated date
+    const effectiveDate = event.date ? new Date(event.date) : null;
+    const now = new Date();
+    if (effectiveDate) {
+      event.status = effectiveDate < now ? 'completed' : 'upcoming';
     }
 
     await event.save();
