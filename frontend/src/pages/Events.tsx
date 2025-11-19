@@ -73,7 +73,29 @@ export default function Events() {
             (await window.galleryAPI?.getAll?.({ eventId: ev._id || ev.id })) ||
             (await import('@/lib/api').then(m => m.galleryAPI.getAll({ eventId: ev._id || ev.id })));
           const items = res.items || res.data || [];
-          galleryMap[ev._id || ev.id] = items.filter((i: any) => i.type === 'image');
+
+          // start with featuredImage if present
+          const images: any[] = [];
+          if (ev.featuredImage) images.push({ url: ev.featuredImage, title: 'Event Flyer' });
+
+          // include any paths stored on the event.gallery array
+          if (Array.isArray(ev.gallery) && ev.gallery.length > 0) {
+            for (const p of ev.gallery) {
+              if (p) images.push({ url: p, title: '' });
+            }
+          }
+
+          // include gallery API image items (avoid duplicates)
+          const apiImages = items.filter((i: any) => i.type === 'image').map((i: any) => ({ url: i.url || i.path || i.thumbnail || i.imageUrl, title: i.title || '' }));
+          const seen = new Set(images.map(img => img.url));
+          for (const img of apiImages) {
+            if (!seen.has(img.url)) {
+              images.push(img);
+              seen.add(img.url);
+            }
+          }
+
+          galleryMap[ev._id || ev.id] = images;
         } catch {
           galleryMap[ev._id || ev.id] = [];
         }
@@ -265,7 +287,11 @@ export default function Events() {
           <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
             <button
               className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 text-2xl"
-              onClick={() => setCarouselOpen(false)}
+              onClick={() => {
+                setCarouselOpen(false);
+                setSelectedEvent(null);
+                setCarouselImages([]);
+              }}
             >
               &times;
             </button>

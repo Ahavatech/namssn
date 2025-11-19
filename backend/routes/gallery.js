@@ -81,14 +81,24 @@ router.get('/:id', async (req, res) => {
 });
 
 // Upload gallery item (Admin only)
-router.post('/', adminAuth, upload.fields([
-  { name: 'media', maxCount: 1 },
-  { name: 'thumbnail', maxCount: 1 }
-]), async (req, res) => {
+router.post('/', adminAuth, upload.any(), async (req, res) => {
   try {
     const { title, description, type, category, eventId, tags, featured } = req.body;
-    
-    if (!req.files.media) {
+
+    // find primary media file (accept various field names)
+    let mediaFile = null;
+    let thumbnailFile = null;
+    if (Array.isArray(req.files)) {
+      for (const f of req.files) {
+        if (!mediaFile && ['media', 'file', 'image', 'mediaFile'].includes(f.fieldname)) mediaFile = f;
+        else if (!thumbnailFile && f.fieldname === 'thumbnail') thumbnailFile = f;
+      }
+
+      // fallback: if no media file matched, take the first uploaded file
+      if (!mediaFile && req.files.length > 0) mediaFile = req.files[0];
+    }
+
+    if (!mediaFile) {
       return res.status(400).json({ message: 'Media file is required' });
     }
 
@@ -101,28 +111,26 @@ router.post('/', adminAuth, upload.fields([
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
       featured: featured === 'true',
       uploadedBy: req.user.name || 'Admin',
-      url: req.files.media[0].path,
-      thumbnail: req.files.thumbnail ? req.files.thumbnail[0].path : null
+      url: mediaFile.path,
+      thumbnail: thumbnailFile ? thumbnailFile.path : null
     };
 
     const item = new Gallery(itemData);
     await item.save();
-    
+
     res.status(201).json(item);
   } catch (error) {
+    console.error('Gallery POST error:', error);
     res.status(400).json({ message: error.message });
   }
 });
 
 // Update gallery item (Admin only)
-router.put('/:id', adminAuth, upload.fields([
-  { name: 'media', maxCount: 1 },
-  { name: 'thumbnail', maxCount: 1 }
-]), async (req, res) => {
+router.put('/:id', adminAuth, upload.any(), async (req, res) => {
   try {
     const { title, description, category, eventId, tags, featured } = req.body;
     const item = await Gallery.findById(req.params.id);
-    
+
     if (!item) {
       return res.status(404).json({ message: 'Gallery item not found' });
     }
@@ -132,26 +140,32 @@ router.put('/:id', adminAuth, upload.fields([
     item.description = description || item.description;
     item.category = category || item.category;
     item.eventId = eventId || item.eventId;
-    
+
     if (featured !== undefined) {
       item.featured = featured === 'true';
     }
-    
+
     if (tags) {
       item.tags = tags.split(',').map(tag => tag.trim());
     }
-    
-    if (req.files.media) {
-      item.url = req.files.media[0].path;
-    }
-    
-    if (req.files.thumbnail) {
-      item.thumbnail = req.files.thumbnail[0].path;
+
+    // map uploaded files
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      for (const f of req.files) {
+        if (['media', 'file', 'image', 'mediaFile'].includes(f.fieldname)) {
+          item.url = f.path;
+        } else if (f.fieldname === 'thumbnail') {
+          item.thumbnail = f.path;
+        } else {
+          // unknown field - ignore or could be used as extra media
+        }
+      }
     }
 
     await item.save();
     res.json(item);
   } catch (error) {
+    console.error('Gallery PUT error:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -203,19 +217,19 @@ router.get('/featured/latest', async (req, res) => {
 });
 
 // Bulk upload for events
-router.post('/bulk/:eventId', adminAuth, upload.array('media', 20), async (req, res) => {
+router.post('/bulk/:eventId', adminAuth, upload.any(), async (req, res) => {
   try {
     const { eventId } = req.params;
     const { category = 'events' } = req.body;
-    
-    if (!req.files || req.files.length === 0) {
+
+    if (!Array.isArray(req.files) || req.files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
     const items = [];
     for (const file of req.files) {
       const type = file.mimetype.startsWith('image/') ? 'image' : 'video';
-      
+
       const item = new Gallery({
         title: `Event Media - ${file.originalname}`,
         type,
@@ -224,16 +238,17 @@ router.post('/bulk/:eventId', adminAuth, upload.array('media', 20), async (req, 
         uploadedBy: req.user.name || 'Admin',
         url: file.path
       });
-      
+
       await item.save();
       items.push(item);
     }
-    
+
     res.status(201).json({
       message: `${items.length} items uploaded successfully`,
       items
     });
   } catch (error) {
+    console.error('Gallery BULK error:', error);
     res.status(400).json({ message: error.message });
   }
 });
