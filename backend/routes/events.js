@@ -36,27 +36,41 @@ const Event = mongoose.model('Event', eventSchema);
 // Get all events
 router.get('/', async (req, res) => {
   try {
-    const { category, status, upcoming, page = 1, limit = 10 } = req.query;
+    const { category, status, upcoming, past, page = 1, limit = 10 } = req.query;
     const filter = {};
-    
+
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    let sort = { date: -1 };
+
     if (category) filter.category = category;
     if (status) filter.status = status;
+
+    // Upcoming events (future)
     if (upcoming === 'true') {
       filter.date = { $gte: new Date() };
       filter.status = { $in: ['upcoming', 'ongoing'] };
+      sort = { date: 1 };
+    }
+
+    // Past events (date before now)
+    if (past === 'true') {
+      filter.date = { $lt: new Date() };
+      // include any status for past events; sort newest first
+      sort = { date: -1 };
     }
 
     const events = await Event.find(filter)
-      .sort({ date: upcoming === 'true' ? 1 : -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-      
+      .sort(sort)
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum);
+
     const total = await Event.countDocuments(filter);
-    
+
     res.json({
       events,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
+      totalPages: Math.ceil(total / limitNum),
+      currentPage: pageNum,
       total
     });
   } catch (error) {
@@ -80,7 +94,9 @@ router.get('/:id', async (req, res) => {
 // Create event (Admin only)
 router.post('/', adminAuth, upload.fields([
   { name: 'featuredImage', maxCount: 1 },
-  { name: 'gallery', maxCount: 10 }
+  { name: 'image', maxCount: 1 },
+  { name: 'gallery', maxCount: 10 },
+  { name: 'images', maxCount: 10 }
 ]), async (req, res) => {
   try {
     const { 
@@ -100,8 +116,8 @@ router.post('/', adminAuth, upload.fields([
       registrationLink,
       maxAttendees: maxAttendees ? parseInt(maxAttendees) : null,
       tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
-      featuredImage: req.files.featuredImage ? req.files.featuredImage[0].path : null,
-      gallery: req.files.gallery ? req.files.gallery.map(file => file.path) : []
+      featuredImage: (req.files.featuredImage && req.files.featuredImage[0]) ? req.files.featuredImage[0].path : (req.files.image && req.files.image[0]) ? req.files.image[0].path : null,
+      gallery: (req.files.gallery ? req.files.gallery : req.files.images ? req.files.images : []).map(file => file.path)
     };
 
     const event = new Event(eventData);
@@ -116,7 +132,9 @@ router.post('/', adminAuth, upload.fields([
 // Update event (Admin only)
 router.put('/:id', adminAuth, upload.fields([
   { name: 'featuredImage', maxCount: 1 },
-  { name: 'gallery', maxCount: 10 }
+  { name: 'image', maxCount: 1 },
+  { name: 'gallery', maxCount: 10 },
+  { name: 'images', maxCount: 10 }
 ]), async (req, res) => {
   try {
     const { 
@@ -150,12 +168,16 @@ router.put('/:id', adminAuth, upload.fields([
       event.tags = tags.split(',').map(tag => tag.trim());
     }
     
-    if (req.files.featuredImage) {
+    // accept alternative field names for uploaded files
+    if (req.files.featuredImage && req.files.featuredImage[0]) {
       event.featuredImage = req.files.featuredImage[0].path;
+    } else if (req.files.image && req.files.image[0]) {
+      event.featuredImage = req.files.image[0].path;
     }
-    
-    if (req.files.gallery) {
-      event.gallery = [...event.gallery, ...req.files.gallery.map(file => file.path)];
+
+    const galleryFiles = req.files.gallery ? req.files.gallery : (req.files.images ? req.files.images : []);
+    if (galleryFiles && galleryFiles.length > 0) {
+      event.gallery = [...event.gallery, ...galleryFiles.map(file => file.path)];
     }
 
     await event.save();
@@ -219,6 +241,21 @@ router.get('/upcoming/latest', async (req, res) => {
     .sort({ date: 1 })
     .limit(5);
     
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get latest past events
+router.get('/past/latest', async (req, res) => {
+  try {
+    const events = await Event.find({
+      date: { $lt: new Date() }
+    })
+    .sort({ date: -1 })
+    .limit(5);
+
     res.json(events);
   } catch (error) {
     res.status(500).json({ message: error.message });
