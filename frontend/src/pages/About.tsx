@@ -18,7 +18,7 @@ export default function About() {
     { name: 'Olatayo Excellence', position: 'Librarian', phone: '0705466453', image: 'lib.jpg' },
     { name: 'Emmanuel Isaac V.', position: 'Financial Secretary', phone: '08166786346', image: 'fin_sec.jpg' },
     { name: 'Idowu Esther', position: 'Assistant Librarian', phone: '08104397406', image: 'ass_lib.jpg' },
-    { name: 'Adesoye Qodir A.', position: 'Director Social', phone: '07016560860', image: 'dir_social.jpg' },
+    { name: 'Adesoye Qodir A.', position: 'Director Socials', phone: '07016560860', image: 'dir_social.jpg' },
     { name: 'Kewulola Murisuq O.', position: 'Director Sports', phone: '07016411404', image: 'dir_sports.jpg' },
     { name: 'Oyekanmi Titiloye', position: 'PRO', phone: '07067846902', image: 'pro.jpg' },
   ];

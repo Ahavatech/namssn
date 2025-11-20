@@ -460,7 +460,7 @@ export default function Admin() {
       }
       try {
         const galleryAPI = await import("@/lib/api").then((m) => m.galleryAPI);
-  const res = await galleryAPI.getAll({ eventId: Number(selectedGalleryEvent) });
+  const res = await galleryAPI.getAll({ eventId: selectedGalleryEvent });
         const items = res.items || res.data || [];
         setGalleryItems(items);
         setGalleryCounts({
@@ -645,7 +645,95 @@ export default function Admin() {
 
   const handleGalleryFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    setGalleryForm((prev) => ({ ...prev, file }));
+    if (!file) {
+      setGalleryForm((prev) => ({ ...prev, file: null }));
+      return;
+    }
+
+    const MAX_BYTES = 10 * 1024 * 1024; // 10MB Cloudinary limit
+
+    const isImage = file.type.startsWith('image/');
+
+    const compressImage = async (input: File): Promise<File | null> => {
+      try {
+        const url = URL.createObjectURL(input);
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = url;
+        });
+
+        // target max width/height
+        const MAX_DIM = 1600;
+        let { width, height } = img;
+        let scale = 1;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          scale = Math.min(MAX_DIM / width, MAX_DIM / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // try to compress with decreasing quality until below MAX_BYTES or minQuality
+        let quality = 0.85;
+        const minQuality = 0.5;
+        while (quality >= minQuality) {
+          const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', quality));
+          if (!blob) break;
+          if (blob.size <= MAX_BYTES) {
+            const newFile = new File([blob], input.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+            URL.revokeObjectURL(url);
+            return newFile;
+          }
+          quality -= 0.1;
+        }
+
+        // final attempt: return last blob even if larger
+        const finalBlob: Blob | null = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', minQuality));
+        if (finalBlob) {
+          const newFile = new File([finalBlob], input.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+          URL.revokeObjectURL(url);
+          return newFile.size <= MAX_BYTES ? newFile : null;
+        }
+        URL.revokeObjectURL(url);
+        return null;
+      } catch (err) {
+        return null;
+      }
+    };
+
+    (async () => {
+      if (file.size <= MAX_BYTES) {
+        setGalleryForm((prev) => ({ ...prev, file }));
+        return;
+      }
+
+      if (isImage) {
+        setGalleryMessage('File is large; attempting to compress image...');
+        const compressed = await compressImage(file);
+        if (compressed) {
+          setGalleryForm((prev) => ({ ...prev, file: compressed }));
+          setGalleryMessage('Image compressed and ready for upload');
+          setTimeout(() => setGalleryMessage(''), 3000);
+          return;
+        }
+        setGalleryMessage('Image is too large even after compression. Please upload a smaller file (under 10MB).');
+        setGalleryForm((prev) => ({ ...prev, file: null }));
+        setTimeout(() => setGalleryMessage(''), 5000);
+        return;
+      }
+
+      setGalleryMessage('File is too large. Maximum allowed size is 10MB.');
+      setGalleryForm((prev) => ({ ...prev, file: null }));
+      setTimeout(() => setGalleryMessage(''), 4000);
+    })();
   };
 
   const handleGalleryUpload = async (e: React.FormEvent) => {

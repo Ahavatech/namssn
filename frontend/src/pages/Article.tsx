@@ -75,7 +75,30 @@ export default function ArticlePage() {
             </div>
           </div>
 
-          <div className="prose max-w-none mb-6" dangerouslySetInnerHTML={{ __html: article.content || article.body }} />
+          {/* Render article content. If content is already HTML, use it as-is; otherwise convert plain text newlines into paragraphs and <br/> for display. */}
+          <div
+            className="prose max-w-none mb-6 break-words"
+            style={{ hyphens: 'auto', WebkitHyphens: 'auto', MozHyphens: 'auto' }}
+              dangerouslySetInnerHTML={{
+              __html: (() => {
+                const raw = article.content || article.body || '';
+                if (!raw) return '';
+                // Heuristically detect if string already contains HTML tags
+                const looksLikeHtml = /<\s*([a-zA-Z]+)(\s|>)/.test(raw);
+                if (looksLikeHtml) return raw;
+
+                // Convert plain text paragraphs (double newlines) into <p> blocks
+                const paragraphs = raw
+                  .split(/\r?\n\s*\r?\n/)
+                  .map(p => p.trim())
+                  .filter(Boolean)
+                  .map(p => `<p>${p.replace(/\r?\n/g, '<br/>')}</p>`)
+                  .join('');
+
+                return paragraphs;
+              })(),
+            }}
+          />
 
           <div className="flex items-center space-x-2">
             <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>

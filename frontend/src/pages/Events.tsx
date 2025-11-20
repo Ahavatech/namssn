@@ -55,6 +55,38 @@ export default function Events() {
   const [carouselTitle, setCarouselTitle] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
 
+  const formatDate = (d: any) => {
+    if (!d) return '';
+    const dt = d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(dt.getTime())) return '';
+    return dt.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
+  const formatTime = (t: any) => {
+    if (!t) return '';
+    // if already a Date
+    if (t instanceof Date) {
+      return t.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    }
+    // if string like 'HH:MM' or 'HH:MM:SS'
+    if (typeof t === 'string') {
+      // if contains AM/PM, return as-is trimmed
+      if (/\b(AM|PM|am|pm)\b/.test(t)) return t.trim();
+      const parts = t.split(':');
+      if (parts.length >= 2) {
+        const hh = parseInt(parts[0], 10);
+        const mm = parseInt(parts[1], 10);
+        if (!Number.isNaN(hh) && !Number.isNaN(mm)) {
+          const dt = new Date();
+          dt.setHours(hh, mm, parts[2] ? parseInt(parts[2], 10) : 0, 0);
+          return dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        }
+      }
+      return t;
+    }
+    return '';
+  };
+
   // Fetch gallery for past events
   useEffect(() => {
     async function fetchGallery() {
@@ -74,6 +106,21 @@ export default function Events() {
             (await import('@/lib/api').then(m => m.galleryAPI.getAll({ eventId: ev._id || ev.id })));
           const items = res.items || res.data || [];
 
+          // helper to normalize URL to a filename key for deduplication
+          const getFileKey = (u: string | undefined) => {
+            if (!u) return '';
+            try {
+              // remove querystring
+              const noQuery = u.split('?')[0];
+              // get last path segment
+              const parts = noQuery.split('/').filter(Boolean);
+              const last = parts.length ? parts[parts.length - 1] : noQuery;
+              return decodeURIComponent(last).toLowerCase();
+            } catch (e) {
+              return (u || '').toLowerCase();
+            }
+          };
+
           // start with featuredImage if present
           const images: any[] = [];
           if (ev.featuredImage) images.push({ url: ev.featuredImage, title: 'Event Flyer' });
@@ -85,13 +132,21 @@ export default function Events() {
             }
           }
 
-          // include gallery API image items (avoid duplicates)
-          const apiImages = items.filter((i: any) => i.type === 'image').map((i: any) => ({ url: i.url || i.path || i.thumbnail || i.imageUrl, title: i.title || '' }));
-          const seen = new Set(images.map(img => img.url));
+          // include gallery API image items (avoid duplicates) — normalize by filename
+          const apiImagesRaw = items.filter((i: any) => i.type === 'image');
+          const apiImages = apiImagesRaw.map((i: any) => ({ url: i.url || i.path || i.thumbnail || i.imageUrl, title: i.title || '' }));
+          // diagnostic log to help track unexpected test uploads
+          try {
+            // eslint-disable-next-line no-console
+            console.debug('Gallery API items for event', ev._id || ev.id, apiImagesRaw.map((a: any) => ({ id: a._id, url: a.url || a.path }))); 
+          } catch (e) {}
+
+          const seen = new Set(images.map(img => getFileKey(img.url)));
           for (const img of apiImages) {
-            if (!seen.has(img.url)) {
+            const key = getFileKey(img.url);
+            if (!seen.has(key) && key) {
               images.push(img);
-              seen.add(img.url);
+              seen.add(key);
             }
           }
 
@@ -205,7 +260,7 @@ export default function Events() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4" />
-                          <span>{event.date}</span>
+                          <span>{formatDate(event.date)}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Clock className="h-4 w-4" />
@@ -259,7 +314,7 @@ export default function Events() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4" />
-                          <span>{event.date}</span>
+                          <span>{formatDate(event.date)}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Clock className="h-4 w-4" />

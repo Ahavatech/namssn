@@ -178,7 +178,7 @@ export const eventsAPI = {
 
 // Gallery API
 export const galleryAPI = {
-  getAll: async (params?: { eventId?: number; mediaType?: string; limit?: number; page?: number }) => {
+  getAll: async (params?: { eventId?: string; mediaType?: string; limit?: number; page?: number }) => {
     const response = await api.get('/gallery', { params });
     return response.data;
   },
